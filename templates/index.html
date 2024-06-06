@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Autonomous Systems Bootcamp 2024</title>
+    <link rel="stylesheet" href="./static/index.css" type="text/css">
+    <link rel="stylesheet" href="./static/bootstrap.css" type="text/css">
+    <link href="https://cdn.skypack.dev/ol/ol.css" rel="stylesheet">
+    <!--link href="https://basemapstyles-api.arcgis.com/arcgis/rest/services/styles/v2/webmaps/arcgis/oceans/base"-->
+    <!--link href="./static/index.css" rel="stylesheet"-->
+    <script src="https://unpkg.com/mathjs@12.4.2/lib/browser/math.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!--script src="./static/bootstrap.bundle.min.js"></script-->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <!--link id="arcgis-maps-sdk-theme-dark" rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/dark/main.css" /-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Yantramanav:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="header">
+        <div class="title">
+          Glider Trajectory Estimation Model
+        </div>
+        <!--div>
+          <calcite-tabs class="padding: 10px">
+            <calcite-tab-nav slot="title-group">
+                <calcite-tab-title scale="l" selected>Paths</calcite-tab-title>
+                <calcite-tab-title scale="l">Models</calcite-tab-title>
+                <calcite-tab-title scale="l">Data</calcite-tab-title>
+            </calcite-tab-nav>
+          </calcite-tabs>
+        </div-->
+      </div>
+      <!--div class="content" id="viewDiv"></div-->
+      <div class="content" id="map"></div>
+      <div class="sidebar">
+        <div class="accordion" id="accordionExample">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                Upload KML
+              </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+              <div class="accordion-body">
+                Add your previous KML data here
+                <br>
+                <br>
+                <button id="addKML" type="button" class="btn btn-outline-light btn-block">Upload</button>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                Models
+              </button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+              <div class="accordion-body">
+                <strong>Models</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                Current Data
+              </button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+              <div class="accordion-body">
+                <strong>Current Data</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                Layers
+              </button>
+            </h2>
+            <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+              <div class="accordion-body">
+                <strong>Future Paths</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--button type="button" id="line">Add Coordinates</button-->
+      </div>
+      <div class="footer">
+      </div>
+    </div>
+    <!--h1>Autonomous Systems Bootcamp 2024</h1>
+    <p>Glider Path Mapping Visualization</p-->
+    <!--p>Expression</p>
+    <input type="text" id="expr"></input>
+    <p>Pretty print</p>
+    <div id="pretty"></div-->
+    <script type="module" src="/static/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  </body>
+  <!--script src="https://js.arcgis.com/4.29/"></script-->
+  <!--script type="module" src="https://js.arcgis.com/calcite-components/2.5.1/calcite.esm.js"></script-->
+  <!--link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.5.1/calcite.css" /-->
+  <!--script type="module" src="https://js.arcgis.com/map-components/4.29/arcgis-map-components.esm.js"></script-->
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wayfinders</title>
+    <!--script src="./static/dynamic.js"></script-->
+    <script src="/static/general.js"></script>
+    <!--script src="./static/keys.js"></script-->
+    <!--script src="./static/bootstrap.bundle.min.js"></script-->
+    <!--script src="/static/jquery-3.6.4.min.js"></script-->
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <link rel="stylesheet" type="text/css" href="/static/bootstrap.css">
+    <!--link rel="stylesheet" type="image/css" src="./static/odl_logo.png"-->
+</head>
+<body class="gradient" onload="set_size()">
+    <div class="modal" id="file_popup">
+        <div class="modal-content" style="background: #222222;">
+            <span class="close" onclick="close_modal('file_popup')" style="color: #FFFFFF;">&times;</span>
+            <h5 style="color: #FFFFFF">
+                Select file or folder to download:
+            </h5>
+            <table style="background: #333333; color: #FFFFFF;">
+                <tr text-align="left">
+                    <td width="3%">
+                        <button style="background: #444444; color: #FFFFFF; border: 0px; font-size: 140%; height: 30%;" onclick="list_download('back')">
+                            <a style="color: #FFFFFF" href="#" class="previous">&laquo</a>
+                        </button>
+                    </td>
+                    <td class="justify-left" style="padding-left: 10px;"><div color="gray" id="directory"></div></td>
+                </tr>
+            </table>
+            <select id="files" style="background: #222222; color: #FFFFFF; border: 0px;" size=12 multiple></select>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" id='download_progress'
+                    width="100%" aria-valuemin="0" aria-valuemax="100" hidden=true>
+                </div>
+            </div>
+                        <button type="button" class="modal-btn" onclick="list_download('open')" style="background: #187D8B">
+                                Open Folder
+                        </button>
+                        <button type="button" onclick="list_download('get')" class="modal-btn" style="background: #187D88;">
+                                Download Files
+                        </button>
+                        <button type="button" onclick="delete_file()"
+                                class="modal-btn" style="background: #B31C1C;">
+                                Delete Files
+                        </button>
+        </div>
+    </div>
+    <div class="modal" id="bluetooth_popup">
+        <div class="modal-content" style="background: #222222;">
+            <span class="close" onclick="close_modal('bluetooth_popup')" style="color: #FFFFFF;">&times;</span>
+            <h5 id="scanning_label" style="color: #FFFFFF">
+                Scanning for devices...
+            </h5>
+            <select id="available_devices" style="background: #333333; color: #FFFFFF; border: 0px;" size=15></select>
+            <button type="button" onclick="bluetooth_connect()"
+                    class="modal-btn" style="background: #187D8B;">
+                    Connect
+            </button>
+            <!--button type="button" onclick="bluetooth_check()"
+                    class="modal-btn" style="background: #187D8B;">
+                    Check Connection Status
+            </button-->
+            <!--h5 id="disconnect_label" style="margin-top: 4%; color: #FFFFFF"></h5>
+            <select id="connected_devices" style="background: #333333; color: #FFFFFF; border: 0px;" size=5></select>
+            <button type="button"
+                    class="modal-btn" style="background: #B31C1C;">
+                    Disconnect
+            </button-->
+            <button type="button" onclick="bluetooth_check(null)"
+                    class="modal-btn" style="background: #187D8B;">
+                    Check Device Connections
+            </button>
+            <div id="bluetooth_check_spacer"></div>
+        </div>
+    </div>
+        <div class="modal" id="program_popup">
+            <div class="modal-content" style="background: #222222;">
+                <span class="close" onclick="close_modal('program_popup')" style="color: #FFFFFF;">&times;</span>
+                <h5 id="" style="color: #FFFFFF">
+                    Available Missions
+                </h5>
+                <select id="available_programs" style="background: #333333; color: #FFFFFF; border: 0px;" size=5></select>
+                <button type="button"
+                        class="modal-btn" style="background: #0C6338;" onclick="start_mission()">
+                        Start
+                </button>
+                <button type="button"
+                        class="modal-btn" style="background: #B31C1C;" onclick="delete_mission()">
+                        Delete
+                </button>
+                <button type="button" onclick="create_program()"
+                        class="modal-btn" style="background: #004D64;">
+                        Create New
+                </button>
+                <div class="card" style="max-width: 100%; height: 40%; border-radius: 0.25rem;">
+                    <div class="card-body drag-canvas" id="program-preview" style="display: grid;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="new_program_popup" style="background-color: rgba(0,0,0,0);">
+        <div class="modal-content" id="new_program_content" style="background: #222222;">
+            <span class="close" onclick="close_modal('new_program_popup')" style="color: #FFFFFF;">&times;</span>
+            <form>
+                Mission Name:
+                <input type="text" id="program-name" name="program-name" onchange="custom_name()" style="background-color: #555555; color: white; border-radius: 0.15rem; border: 0px; text-align: right; margin: 0.5%;">
+                <br>
+                Program Length:
+                <input type="text" id="length-hours" min="0" name="length-hours" onchange="custom_hours()" style="width: 4%; background-color: #555555; color: white; border-radius: 0.15rem; border: 0px; text-align: right; margin: 0.5%;">
+                hours
+                <input type="text" id="length-minutes" min="0" max="59" onchange="custom_minutes()" name="length-minutes" style="width: 4%; background-color: #555555; color: white; border-radius: 0.15rem; border: 0px; text-align: right">
+                minutes
+            </form>
+            <div class="card-group">
+                <div class="card" style="border-radius: 0.25rem; margin-left: 0px;">
+                    <div id="drag_timeline" class="card-body drag-canvas" ondrop="sensor_drop(event)" ondragover="allow_sensor_drop(event)">
+                        
+                    </div>
+                </div>
+                <div class="card" style="max-width: 25%; border-radius: 0.25rem; margin-right: 0px;">
+                    <div class="card-body drag-canvas" style="display: grid;">
+                        <button id="video_drag" class="drag-element vid-record" style="background-color: #AAAAAA;" draggable="true"
+                                ondragstart="sensor_drag(event)">
+                            &#128247;
+                            Record Video
+                        </button>
+                        <button id="nav_drag" class="drag-element nav-sensor" style="background-color: #BC6F20;" draggable="true"
+                                ondragstart="sensor_drag(event)">
+                            &#129517;
+                            Navigation
+                        </button>
+                        <button id="cond_drag" class="drag-element cond-sensor" style="background-color: #9E8F35;" draggable="true"
+                                ondragstart="sensor_drag(event)">
+                            &#9889;
+                            Conductivity
+                        </button>
+                        <button id="env_drag" class="drag-element environment-sensor" style="background-color: #A92729;" draggable="true"
+                                ondragstart="sensor_drag(event)">
+                            &#127777;
+                            Environment
+                        </button>
+                        <button id="sys_drag" class="drag-element system-sensor" style="background-color: #4064AE;" draggable="true"
+                                ondragstart="sensor_drag(event)">
+                            &#128167;
+                            System
+                        </button>
+                        <button id="sonar_drag" class="drag-element sonar-sensor" style="background-color: #0C6338;" draggable="true"
+                                ondragstart="sensor_drag(event)">
+                            &#128266;
+                            Sonar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div id="timing_spacer"></div>
+            <br>
+            <button type="button"
+                    class="modal-btn" style="background: #004D64;" onclick="save_new_program()">
+                Save Program
+            </button>
+        </div>
+    </div>
+    <div class="header">
+        <div class="header-grid">
+            <div class="logo">
+                <img src="/static/odl_logo.png" style="max-height: 7vh; max-width: 100%;"></img>
+            </div>
+            <div class="indicator">
+                <div id="online_icon" style="background: #34EB43; height: 3vh; width: 3vh; border-radius: 50%;"></div>
+                <div id="online_label" style="margin: 1vh; color: #FFFFFF;">Connected</div>
+            </div>
+            <div class="bluetooth-btn">
+                <button type="button" onclick="bluetooth_scan()" id="bluetooth"
+                    class="bluetooth-btn"
+                    title="Scan and connect to Bluetooth devices">
+                    Bluetooth Options
+                </button>
+            </div>
+            <div class="program-btn">
+                <button type="button" onclick="program_list()" id="programmer"
+                    class="program-btn"
+                    title="Choose/create a mission to run">
+                    Choose/Create Mission
+                </button>
+            </div>
+            <div class="download-btn">
+                <button type="button" onclick="list_download('base')" id="downloader"
+                    class="download-btn"
+                    title="Choose file/folder to download">
+                    Download Data
+                </button>
+            </div>
+            <div class="shutdown-btn">
+                <button type="button" onclick="stop_rov()"
+                    class="shutdown-btn" title="Stops the ROV, this page will stop working">
+                    Shutdown
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-group">
+        <div class="card" style="background: rgb(34,34,34,0.7); color: #DDDDDD; max-width:57%;">
+            <div class="card-body">
+                <table class="table table-hover table-sm">
+                    <tr>
+                        <th>Navigation</th>
+                        <th></th>
+                        <th>
+                            <button id="orientation" class="enable-btn" onclick="enable('orientation')">Enable</button>
+                        </th>
+                        <th>Environment</th>
+                        <th></th>
+                        <th>
+                            <button id="environment" class="enable-btn" onclick="enable('environment')">Enable</button>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>Heading</td>
+                        <td id="header"></td>
+                        <td>&#176 from N</td>
+                        <td>Temperature</td>
+                        <td id="tempWater"></td>
+                        <td>&#8451</td>
+                    </tr>
+                    <tr>
+                        <td scope="row">Roll</td>
+                        <td id="roll"></td>
+                        <td>&#176</td>
+                        <td scope="row">Depth</td>
+                        <td id="depthWater"></td>
+                        <td>m</td>
+                    </tr>
+                    <tr>
+                        <td scope="row">Pitch</td>
+                        <td id="pitch"></td>
+                        <td>&#176</td>
+                        <td scope="row">Pressure</td>
+                        <td id="pressureWater"></td>
+                        <td>Bar</td>
+                    </tr>
+                    <tr>
+                        <td scope="row">Yaw</td>
+                        <td id="yaw"></td>
+                        <td>&#176</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <th>Conductivity</th>
+                        <th></th>
+                        <th>
+                            <button id="bt_serial" class="enable-btn" onclick="enable('bt_serial')">Enable</button>
+                        </th>
+                        <th>Altimeter</th>
+                        <th></th>
+                        <th>
+                            <button id="sonar" class="enable-btn" onclick="enable('sonar')">Enable</button>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td scope="row">Conductivity</td>
+                        <td id="conductivity"></td>
+                        <td>ms/cm</td></td>
+                        <td scope="row">Distance</td>
+                        <td id="sonar_depth"></td>
+                        <td>m</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td scope="row">Confidence</td>
+                        <td id="sonar_confi"></td>
+                        <td>%</td>
+                    </tr>
+                    <tr>
+                        <th>System</th>
+                        <th></th>
+                        <th>
+                            <button id="system_monitor" class="enable-btn" onclick="enable('system_monitor')">Enable</button>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr id="diskTr">
+                        <td scope="row">Free Space</td>
+                        <td id="free_space"></td>
+                        <td>MB</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr id="cpuTr">
+                        <td scope="row">CPU Temp</td>
+                        <td id="cpu_temp"></td>
+                        <td>&#8451</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td scope="row">Internal Temp</td>
+                        <td id="temp"></td>
+                        <td>&#8451</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td scope="row">Internal Humidity</td>
+                        <td id="humidity"></td>
+                        <td>%</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+                <button id="all" class="enable-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; text-align: center; display: block"
+                        title="Enable recording for all sensors" value="Enable All" onclick="enable('all')">Enable All</button>
+                <!--button class="enable-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; text-align: center;"
+                        id="debugTrigger" title="Enable debug mode" value="Enable All">Debug</button-->
+               <!--div id="data">Hello</div-->
+            </div>
+        </div>
+        <div class="card" style="background: rgb(34,34,34,0.7); color: #DDDDDD; max-width:43%; overflow: auto;">
+            <div class="center-panel" style="text-align: center; display: grid;">
+                <div id="fullscreen_helper">
+                    <div style="text-align: center;">
+                        <img id="image" src="/mjpeg">
+                    </div>
+                    <!--img class="rollOverlay" id="rollOverlay" style="display: block;" src="./static/roll.png"-->
+                </div>
+                <button class="modal-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; margin-left: 0.5rem; margin-right: 0.5rem; text-align: center; background: #0C6338;" onclick="enable('camera')"
+                        id="camera" title="Start/stop camera recording">Start Recording</button>
+                <div style="display: inline-block;">
+                    <button class="enable-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; text-align: center;" onclick="rotate_image()">&#8634 Rotate Video</button>
+                    <!--button class="enable-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; text-align: center;" onclick="toggle_roll()">Roll Indicator</button-->
+                    <button class="enable-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; text-align: center;" onclick="motor('left')">&#8678 Pan Left</button>
+                    <button class="enable-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; text-align: center;" onclick="motor('right')">Pan Right &#8680</button>
+                    <button class="enable-btn" style="margin-top: 0.5rem; margin-bottom: 0.5rem; text-align: center;" onclick="fullscreen()">Fullscreen</button>
+                </div>
+            </div>
+        </div>
+        <!--div class="card" id="debug" hidden>
+            <div class="card-body" style="background: #222222; color: #AAAAAA; width:20%;">
+                
+            </div>
+        </div-->
+    </div>
+</body>
+</html>
