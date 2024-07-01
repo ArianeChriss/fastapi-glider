@@ -1,18 +1,24 @@
 <!DOCTYPE html>
-<html data-bs-theme="dark">
+<html data-bs-theme="light">
   <head>
     <meta charset="UTF-8" />
     <title>Autonomous Systems Bootcamp 2024</title>
     <link rel="stylesheet" href="./static/index.css" type="text/css">
-    <link rel="stylesheet" href="./static/bootstrap.css" type="text/css">
     <link href="https://cdn.skypack.dev/ol/ol.css" rel="stylesheet">
     <!--link href="https://basemapstyles-api.arcgis.com/arcgis/rest/services/styles/v2/webmaps/arcgis/oceans/base"-->
     <!--link href="./static/index.css" rel="stylesheet"-->
     <script src="https://unpkg.com/mathjs@12.4.2/lib/browser/math.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    
+    <script src="./static/jquery-3.6.4.min.js" type="text/javascript"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <!--script src="./static/bootstrap.bundle.min.js"></script-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+    <!--script type="module" src="./static/netcdfjs/lib-esm/index.js"></script-->
+    <!--script type="module">
+      import netcdf4Async from 'https://cdn.jsdelivr.net/npm/netcdf4-async@0.1.0-0/+esm'
+      </script-->
+    <!--script src="https://cdn.jsdelivr.net/npm/jsfive@0.3.10/dist/browser/hdf5.js"></script-->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-    <!--link id="arcgis-maps-sdk-theme-dark" rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/dark/main.css" /-->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Yantramanav:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
@@ -23,44 +29,51 @@
         <div class="title">
           Glider Trajectory Estimation Model
         </div>
-        <!--div>
-          <calcite-tabs class="padding: 10px">
-            <calcite-tab-nav slot="title-group">
-                <calcite-tab-title scale="l" selected>Paths</calcite-tab-title>
-                <calcite-tab-title scale="l">Models</calcite-tab-title>
-                <calcite-tab-title scale="l">Data</calcite-tab-title>
-            </calcite-tab-nav>
-          </calcite-tabs>
-        </div-->
       </div>
+      <div class="line"></div>
       <!--div class="content" id="viewDiv"></div-->
       <div class="content" id="map"></div>
       <div class="sidebar">
-        <div class="accordion" id="accordionExample">
+        <div class="accordion accordion-flush" id="accordionExample">
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                Upload KML
+                Upload Data
               </button>
             </h2>
             <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                Add your previous KML data here
+                Add previous data files here
                 <br>
                 <br>
-                <button id="addKML" type="button" class="btn btn-outline-light btn-block">Upload</button>
+                Note: too many files may result in the program responding slowly
+                <br>
+                <br>
+                <div class="dropdown">
+                  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    File Type
+                  </button>
+                  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="dataType">
+                    <a class="dropdown-item" href="#">.nc v3</a>
+                    <a class="dropdown-item" href="#">.nc v4</a>
+                    <a class="dropdown-item" href="#">.kml</a>
+                    <a class="dropdown-item" href="#">.csv</a>
+                  </div>
+                </div>
+                <br>
+                <button id="addData" type="button" class="btn btn-outline-dark">Upload</button>
               </div>
             </div>
           </div>
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                Models
+                Model Parameters
               </button>
             </h2>
             <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                <strong>Models</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+                It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
               </div>
             </div>
           </div>
@@ -72,7 +85,7 @@
             </h2>
             <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                <strong>Current Data</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+                It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
               </div>
             </div>
           </div>
@@ -100,8 +113,8 @@
     <input type="text" id="expr"></input>
     <p>Pretty print</p>
     <div id="pretty"></div-->
-    <script type="module" src="/static/main.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!--script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script-->
+    <script type="module" src="./static/main.js"></script>
   </body>
   <!--script src="https://js.arcgis.com/4.29/"></script-->
   <!--script type="module" src="https://js.arcgis.com/calcite-components/2.5.1/calcite.esm.js"></script-->

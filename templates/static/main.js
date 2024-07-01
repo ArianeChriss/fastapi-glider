@@ -1,37 +1,36 @@
-//import './index.css';
 import Map from 'https://cdn.skypack.dev/ol/Map.js';
 import View from 'https://cdn.skypack.dev/ol/View.js';
 import TileLayer from 'https://cdn.skypack.dev/ol/layer/Tile.js';
 import OSM from 'https://cdn.skypack.dev/ol/source/OSM.js';
-//import Map from "@arcgis/core/Map.js";
-//import MapView from "@arcgis/core/views/MapView.js";
-//import Graphic from "@arcgis/core/Graphic.js";
-//import Polyline from "@arcgis/core/geometry/Polyline.js";
-//import Point from "@arcgis/core/geometry/Point.js";
-//import * as geometryEngine from "@arcgis/core/geometry/geometryEngine.js";
-//import { setAssetPath } from "@esri/calcite-components/dist/components";
+//import KML from 'https://cdn.skypack.dev/ol/format/KML.js';
+import VectorSource from 'https://cdn.skypack.dev/ol/source/Vector.js';
+import VectorLayer from 'https://cdn.skypack.dev/ol/layer/Vector.js';
+import Feature from 'https://cdn.skypack.dev/ol/Feature.js';
+import Point from 'https://cdn.skypack.dev/ol/geom/Point.js';
+import Polyline from 'https://cdn.skypack.dev/ol/format/Polyline.js';
+import LineString from 'https://cdn.skypack.dev/ol/geom/LineString.js';
+import {useGeographic} from 'https://cdn.skypack.dev/ol/proj.js';
+import {Circle, Fill, Stroke, Style} from 'https://cdn.skypack.dev/ol/style.js';
 
-//console.log('👋 This message is being logged by "renderer.js", included via Vite');
-//setAssetPath("https://js.arcgis.com/calcite-components/2.8.2/assets");
-/*
-import "@esri/calcite-components/dist/components/calcite-tab";
-import "@esri/calcite-components/dist/components/calcite-tab-nav";
-import "@esri/calcite-components/dist/components/calcite-tab-title";
-import "@esri/calcite-components/dist/components/calcite-button";
-import "@esri/calcite-components/dist/components/calcite-icon";
-import "@esri/calcite-components/dist/components/calcite-slider";
+//import * as netcdf4Async from 'https://esm.run/netcdf4-async';
+//import * as hdf5 from './index.js';//'https://cdn.jsdelivr.net/npm/jsfive@0.3.10/dist/browser/hdf5.js';
+//import h5lt from 'hdf5';
 
-const map = new Map({
-    basemap: "oceans"
-});
-  
-const view = new MapView({
-    container: "viewDiv",
-    map: map,
-    zoom: 6,
-    center: [-75, 38] // longitude, latitude
-});
-*/
+//const NetCDFReader = require('./node_modules/netcdfjs/src/parser.js');
+//import { NetCDFReader } from './index.js';
+//import * as Featureloader from 'https://cdn.skypack.dev/ol/featureloader.js';
+//import NetCDFReader from './netcdfjs/lib-esm/parser';
+
+//import * as CsvReadableStream from './csv-parser.js';
+//import * as Fs from './fs.js';
+
+useGeographic();
+
+const addData = document.getElementById("addData");
+var typeValue = null;
+var source = new VectorSource();
+//var mapLayers = [];
+
 const map = new Map({
   target: 'map',
   layers: [
@@ -44,14 +43,241 @@ const map = new Map({
     zoom: 2
   })
 });
+function upload_data() {
+  if (typeValue == ".nc v3") {
+    var uploaded = document.createElement("input");
+    uploaded.type = "file";
+    uploaded.accept = ".nc";
+    uploaded.onchange = e => {
+      var uploadNC = e.target.files[0];
+      if (uploadNC) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          var ncReader = new NetCDFReader(reader.result);
+          // figure out the actual displays later I guess
+        }
+        reader.readAsArrayBuffer(uploadNC);
+      }
+    }
+    uploaded.click();
+  }
+  else if (typeValue == ".nc v4") {
+    var uploaded = document.createElement("input");
+    uploaded.type = "file";
+    uploaded.accept = ".nc";
+    uploaded.onchange = e => {
+      var uploadNC = e.target.files[0];
+      if (uploadNC) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          var file = new hdf5.File(reader.result, uploaded.name);
+          try {
+            var lats = file.get("lat").value;
+            var longs = file.get("lon").value;
+          }
+          catch (error) {
+            var lats = file.get("latitude").value;
+            var longs = file.get("longitude").value;
+          }
+          var coords = []
+          for (var i = 0; i < lats.length; i++) {
+            var tempLat = parseFloat(lats[i]);
+            var tempLong = parseFloat(longs[i])
+            if ((parseFloat(-90) <= tempLat) && (tempLat <= parseFloat(90)) && 
+                  ((parseFloat(-180) <= tempLong) && (tempLong <= parseFloat(180)))) {
+              coords.push([tempLong, tempLat]);
+            }
+          }
+          var addFeature = new Feature({
+            geometry: new LineString(coords),
+            layout: "XY"
+          })
+          addFeature.setStyle(new Style({
+            stroke: new Stroke({
+              color: '#3399CC',
+              width: 8,
+            })
+          }))
+          map.addLayer(new VectorLayer({
+            source: new VectorSource({
+              features: [addFeature]
+            }),
+          }))
+        }
+      };
+      reader.readAsArrayBuffer(uploadNC);
+    }
+    uploaded.click();
+  }
+  else if (typeValue == ".kml") {
+    var uploaded = document.createElement("input");
+    uploaded.type = "file";
+    uploaded.accept = ".kml";
+    uploaded.onchange = e => {
+      var uploadKML = e.target.files[0];
+      if (uploadKML) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+            var coords = []
+            var points = JSON.parse(this.responseText);
+            var pointsFeatures = []
+            console.log(points);
+            for (var point of points.coordinates) {
+              coords.push([parseFloat(point[0]), parseFloat(point[1])])
+              pointsFeatures.push(new Feature({
+                geometry: new Point({
+                  name: points[2],
+                  coordinates: [parseFloat(point[0], parseFloat(point[1]))]
+                })
+              }))
+            }
+            var addFeature = new Feature({
+              geometry: new LineString(coords),
+              layout: "XY"
+            })
+            addFeature.setStyle(new Style({
+              stroke: new Stroke({
+                color: '#3399CC',
+                width: 8,
+              })
+            }))
+            source.addFeature(addFeature);
+            source.addFeatures(pointsFeatures);
+            map.addLayer(new VectorLayer({
+              source: source
+            }))
+          }
+        }
+        xhttp.open("POST", "upload/kml", true);
+        const fileData = new FormData();
+        fileData.append("file", uploadKML);
+        xhttp.send(fileData);
+      }
+    }
+    uploaded.click();
+  }
+  else if (typeValue == ".csv") {
+    var uploaded = document.createElement("input");
+    uploaded.type = "file";
+    uploaded.accept = ".csv";
+    uploaded.onchange = e => {
+      var uploadCSV = e.target.files[0];
+      if (uploadCSV) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          let inputStream = Fs.createReadStream(reader.result)
+	          .pipe(new AutoDetectDecoderStream({ defaultEncoding: '1255' })); // If failed to guess encoding, default to 1255
+          inputStream
+            .pipe(new CsvReadableStream({ parseNumbers: true, parseBooleans: true, trim: true, asObject: true }))
+            .on('data', function (row) {
+                console.log('A row arrived: ', row);
+            }).on('end', function () {
+                console.log('No more rows!');
+            });
+          /*var coords = []
+          for (var i = 0; i < lats.length; i++) {
+            var tempLat = parseFloat(lats[i]);
+            var tempLong = parseFloat(longs[i])
+            if ((parseFloat(-90) <= tempLat) && (tempLat <= parseFloat(90)) && 
+                  ((parseFloat(-180) <= tempLong) && (tempLong <= parseFloat(180)))) {
+              coords.push([tempLong, tempLat]);
+            }
+          }
+          var addFeature = new Feature({
+            geometry: new LineString(coords),
+            layout: "XY"
+          })
+          addFeature.setStyle(new Style({
+            stroke: new Stroke({
+              color: '#3399CC',
+              width: 8,
+            })
+          }))
+          map.addLayer(new VectorLayer({
+            source: new VectorSource({
+              features: [addFeature]
+            }),
+          }))*/
+        }
+      };
+      reader.readAsDataURL(uploadCSV);
+    }
+    uploaded.click();
+  }
+}
 
-const add_kml = document.getElementById("addKML");
-
+/*
 function upload_kml() {
   var uploaded = document.createElement("input");
   uploaded.type = "file";
   uploaded.accept = ".kml";
+  uploaded.onchange = e => {
+    var uploadKML = e.target.files[0];
+    if (uploadKML) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        map.addLayer(new VectorLayer({
+          source: new VectorSource({
+            url: reader.result,
+            format: new KML()
+          })
+        }))
+      };
+      reader.readAsDataURL(uploadKML);
+    }
+  }
+  uploaded.click();
 }
+
+
+function upload_ncv3() {
+  var uploaded = document.createElement("input");
+  uploaded.type = "file";
+  uploaded.accept = ".nc";
+  uploaded.onchange = e => {
+    var uploadNC = e.target.files[0];
+    if (uploadNC) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        var ncReader = new NetCDFReader(reader.result);
+        console.log(ncReader.getDataVariable("lat"));
+        // figure out the actual displays later I guess
+      }
+      reader.readAsArrayBuffer(uploadNC);
+    }
+  }
+  uploaded.click();
+}
+
+function upload_ncv4() {
+  var uploaded = document.createElement("input");
+  uploaded.type = "file";
+  uploaded.accept = ".nc";
+  uploaded.onchange = e => {
+    var uploadNC = e.target.files[0];
+    if (uploadNC) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        var file = new hdf5.File(reader.result, uploaded.name);
+        var lats = file.get("latitude").value;
+        var longs = file.get("longitude").value;
+        var coords = []
+        for (var i = 0; i < lats.length; i++) {
+          coords.push([lats[i], longs[i]]);
+        }
+        map.addLayer(new VectorLayer({
+          source: new VectorSource(),
+          geometry: new MultiPoint({
+            coordinates: coords
+          })
+        }))
+      }
+    };
+    reader.readAsArrayBuffer(uploadNC);
+  }
+  uploaded.click();
+}*/
 
 /*
 
@@ -225,5 +451,10 @@ function add_line(coordinates, name, date, model, color, increments) {
     view.graphics.add(polylineGraphic);
 }
 
-add_kml.addEventListener("click", upload_kml.bind(this));
+$(document).ready(function () {
+  $('#dataType a').on('click', function () {
+    typeValue = ($(this).text());
+  })
+})
+addData.addEventListener("click", upload_data.bind(this));
 //add_button.addEventListener("click", add_line.bind(this, [-74, 37], "glider 1", "5/16/2024", "none", [20, 3, 252], 0));

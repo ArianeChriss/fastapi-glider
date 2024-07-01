@@ -56,17 +56,24 @@ input[type=text] {
 .wrapper {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  grid-auto-rows: 10vh 90vh 0vh;
+  grid-auto-rows: 9vh 1vh 90vh 0vh;
   grid-template-areas:
     "hd hd hd hd   hd   hd   hd   hd   hd"
+    "th th th th   th   th   th   th   th"
     "main main main main main sd sd sd sd"
     "ft ft ft ft   ft   ft   ft   ft   ft";
 }
 
 .header {
   grid-area: hd;
-  color: #b4b4b4;
+  color: #e7e7e7;
+  background-color: #182235;
   font-family: "yamatranav-thin", sans-serif !important;
+}
+
+.line {
+  grid-area: th;
+  background-color: #ffc7f0;
 }
 
 .footer {
