@@ -15,6 +15,7 @@ import json
 from pprint import pprint
 import re
 from datetime import datetime
+import csv
 
 app = FastAPI(title="main-app")
 templates = Jinja2Templates(directory="templates")
@@ -69,6 +70,40 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 						points.append([long_info, lat_info, time_info])
 			sorted_points = sorted(points, key=lambda t: datetime.strptime(t[2], '%Y-%m-%dT%H:%M:%S'))
 			pointsJSON = json.dumps({"coordinates": sorted_points})
+			return Response(content=pointsJSON, status_code=200)
+		except Exception as e:
+			print(e)
+			print("file upload failed")
+	elif (filetype == "csv"):
+		try:
+			points = []
+			contents = await file.read()
+			decoded_content = contents.decode('utf-8')
+			csv_data = StringIO(decoded_content)
+			csvreader = csv.reader(csv_data)
+			timeIndex = None
+			longIndex = None
+			latIndex = None
+			fields = next(csvreader)
+			for i in range(len(fields)):
+				if (re.search(r'time', fields[i], re.IGNORECASE) and timeIndex == None):
+					timeIndex = i
+				elif (re.search(r'lon', fields[i], re.IGNORECASE) and longIndex == None):
+					longIndex = i
+				elif (re.search(r'lat', fields[i], re.IGNORECASE) and latIndex == None):
+					latIndex = i
+			for row in csvreader:
+				try:
+					long = float(row[longIndex])
+				except Exception as e:
+					long = None
+				try:
+					lat = float(row[latIndex])
+				except Exception as e:
+					lat = None
+				if (long != None and lat != None):
+					points.append([long, lat, row[timeIndex]])
+			pointsJSON = json.dumps({"coordinates": points})
 			return Response(content=pointsJSON, status_code=200)
 		except Exception as e:
 			print(e)

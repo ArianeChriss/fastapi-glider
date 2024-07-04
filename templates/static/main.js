@@ -10,7 +10,10 @@ import Point from 'https://cdn.skypack.dev/ol/geom/Point.js';
 import Polyline from 'https://cdn.skypack.dev/ol/format/Polyline.js';
 import LineString from 'https://cdn.skypack.dev/ol/geom/LineString.js';
 import {useGeographic} from 'https://cdn.skypack.dev/ol/proj.js';
-import {Circle, Fill, Stroke, Style} from 'https://cdn.skypack.dev/ol/style.js';
+import {Circle, Fill, Stroke, Style, Text} from 'https://cdn.skypack.dev/ol/style.js';
+//import GeometryCollection from 'https://cdn.skypack.dev/ol/geom/GeometryCollection.js';
+//import {fromLonLat} from 'https://cdn.skypack.dev/ol/proj';
+
 
 //import * as netcdf4Async from 'https://esm.run/netcdf4-async';
 //import * as hdf5 from './index.js';//'https://cdn.jsdelivr.net/npm/jsfive@0.3.10/dist/browser/hdf5.js';
@@ -29,7 +32,95 @@ useGeographic();
 const addData = document.getElementById("addData");
 var typeValue = null;
 var source = new VectorSource();
+const myDom = {
+  points: {
+    text: 'Normal',
+    align: 'Left',
+    baseline: 'Bottom',
+    rotation: 0,
+    font: 'Open Sans',
+    weight: 'Normal',
+    size: '16px',
+    height: 1,
+    offsetX: 2,
+    offsetY: 2,
+    color: '#111111',
+    outline: '#ffffff',
+    outlineWidth: 3,
+    maxreso: 1200
+  },
+}
+
+const openSans = document.createElement('link');
+openSans.href = 'https://fonts.googleapis.com/css?family=Open+Sans';
+openSans.rel = 'stylesheet';
+document.head.appendChild(openSans);
 //var mapLayers = [];
+
+const getText = function (feature, resolution, dom) {
+  const type = dom.text.value;
+  const maxResolution = dom.maxreso.value;
+  let text = feature.get('name');
+
+  if (resolution > maxResolution) {
+    text = '';
+  } else if (type == 'hide') {
+    text = '';
+  } else if (type == 'shorten') {
+    text = text.trunc(12);
+  } else if (
+    type == 'wrap' &&
+    (!dom.placement || dom.placement.value != 'line')
+  ) {
+    text = stringDivider(text, 16, '\n');
+  }
+
+  return text;
+};
+
+const createTextStyle = function (feature, resolution, dom) {
+  const align = dom.align.value;
+  const baseline = dom.baseline.value;
+  const size = dom.size.value;
+  const height = dom.height.value;
+  const offsetX = parseInt(dom.offsetX.value, 10);
+  const offsetY = parseInt(dom.offsetY.value, 10);
+  const weight = dom.weight.value;
+  const placement = dom.placement ? dom.placement.value : undefined;
+  const maxAngle = dom.maxangle ? parseFloat(dom.maxangle.value) : undefined;
+  const overflow = dom.overflow ? dom.overflow.value == 'true' : undefined;
+  const rotation = parseFloat(dom.rotation.value);
+  const font = weight + ' ' + size + '/' + height + ' ' + dom.font.value;
+  const fillColor = dom.color.value;
+  const outlineColor = dom.outline.value;
+  const outlineWidth = parseInt(dom.outlineWidth.value, 10);
+
+  return new Text({
+    textAlign: align == '' ? undefined : align,
+    textBaseline: baseline,
+    font: font,
+    text: getText(feature, resolution, dom),
+    fill: new Fill({color: fillColor}),
+    stroke: new Stroke({color: outlineColor, width: outlineWidth}),
+    offsetX: offsetX,
+    offsetY: offsetY,
+    placement: placement,
+    maxAngle: maxAngle,
+    overflow: overflow,
+    rotation: rotation,
+  });
+};
+
+function pointStyleFunction(feature, resolution) {
+  return new Style({
+    image: new Circle({
+      radius: 10,
+      fill: new Fill({color: 'rgba(255, 0, 0, 0.1)'}),
+      stroke: new Stroke({color: 'red', width: 1}),
+    }),
+    text: createTextStyle(feature, resolution, myDom.points),
+  });
+}
 
 const map = new Map({
   target: 'map',
@@ -44,7 +135,7 @@ const map = new Map({
   })
 });
 function upload_data() {
-  if (typeValue == ".nc v3") {
+  /*if (typeValue == ".nc v3") {
     var uploaded = document.createElement("input");
     uploaded.type = "file";
     uploaded.accept = ".nc";
@@ -108,11 +199,16 @@ function upload_data() {
       reader.readAsArrayBuffer(uploadNC);
     }
     uploaded.click();
-  }
-  else if (typeValue == ".kml") {
+  }*/
+  if ((typeValue == ".kml") || (typeValue == ".csv")) {
     var uploaded = document.createElement("input");
     uploaded.type = "file";
-    uploaded.accept = ".kml";
+    if (typeValue == ".kml") {
+      uploaded.accept = ".kml";
+    }
+    else {
+      uploaded.accept = ".csv";
+    }
     uploaded.onchange = e => {
       var uploadKML = e.target.files[0];
       if (uploadKML) {
@@ -121,35 +217,59 @@ function upload_data() {
           if (this.readyState == 4 && this.status == 200) {
             var coords = []
             var points = JSON.parse(this.responseText);
-            var pointsFeatures = []
+            var pointFeats = [];
             console.log(points);
             for (var point of points.coordinates) {
               coords.push([parseFloat(point[0]), parseFloat(point[1])])
-              pointsFeatures.push(new Feature({
-                geometry: new Point({
-                  name: points[2],
-                  coordinates: [parseFloat(point[0], parseFloat(point[1]))]
-                })
-              }))
+              /*pointFeats.push(new Feature({
+                geometry: new Point([parseFloat(point[0]), parseFloat(point[1])]),
+                layout: "XY"
+              }))*/
             }
-            var addFeature = new Feature({
+            var addFeatureLine = new Feature({
               geometry: new LineString(coords),
               layout: "XY"
             })
-            addFeature.setStyle(new Style({
+            addFeatureLine.setStyle(new Style({
               stroke: new Stroke({
                 color: '#3399CC',
                 width: 8,
               })
             }))
-            source.addFeature(addFeature);
-            source.addFeatures(pointsFeatures);
+            var addFeatureEndpoint = new Feature({
+              geometry: new Point(coords.slice(-1)[0]),
+              layout: "XY"
+            })
+            var coordsLast = [parseFloat(coords.slice(-1)[0][0]).toFixed(6), parseFloat(coords.slice(-1)[0][1]).toFixed(6)];    //NaN for some reason???
+            addFeatureEndpoint.setStyle(new Style({        
+              image: new Circle({
+                radius: 10,
+                fill: new Fill({color: 'rgba(25, 96, 110, 1)'}),
+                stroke: new Stroke({color: 'rgba(15, 60, 80, 1)', width: 1}),
+              }),
+              text: new Text({
+                font: 'bold 16px sans-serif',
+                text: coordsLast.toString(),
+                textAlign: 'left',
+                textBaseline: 'bottom',
+                fill: new Fill({color: 'rgba(0, 0, 0, 1)'}),
+                stroke: new Stroke({color: 'rgba(255, 255, 255, 1)'})
+              })
+            }))
+            source.addFeature(addFeatureLine);
+            source.addFeature(addFeatureEndpoint);
+            console.log(source);
             map.addLayer(new VectorLayer({
               source: source
             }))
           }
         }
-        xhttp.open("POST", "upload/kml", true);
+        if (typeValue == ".kml") {
+          xhttp.open("POST", "upload/kml", true);
+        }
+        else if (typeValue == ".csv") {
+          xhttp.open("POST", "upload/csv", true);
+        }
         const fileData = new FormData();
         fileData.append("file", uploadKML);
         xhttp.send(fileData);
@@ -157,7 +277,7 @@ function upload_data() {
     }
     uploaded.click();
   }
-  else if (typeValue == ".csv") {
+  /*else if (typeValue == ".csv") {
     var uploaded = document.createElement("input");
     uploaded.type = "file";
     uploaded.accept = ".csv";
@@ -198,132 +318,15 @@ function upload_data() {
             source: new VectorSource({
               features: [addFeature]
             }),
-          }))*/
+          }))   ENDING OF COMMENT WAS ORIGINALLY HERE
         }
       };
       reader.readAsDataURL(uploadCSV);
     }
     uploaded.click();
-  }
+  }*/
 }
 
-/*
-function upload_kml() {
-  var uploaded = document.createElement("input");
-  uploaded.type = "file";
-  uploaded.accept = ".kml";
-  uploaded.onchange = e => {
-    var uploadKML = e.target.files[0];
-    if (uploadKML) {
-      var reader = new FileReader();
-      reader.onload = function() {
-        map.addLayer(new VectorLayer({
-          source: new VectorSource({
-            url: reader.result,
-            format: new KML()
-          })
-        }))
-      };
-      reader.readAsDataURL(uploadKML);
-    }
-  }
-  uploaded.click();
-}
-
-
-function upload_ncv3() {
-  var uploaded = document.createElement("input");
-  uploaded.type = "file";
-  uploaded.accept = ".nc";
-  uploaded.onchange = e => {
-    var uploadNC = e.target.files[0];
-    if (uploadNC) {
-      var reader = new FileReader();
-      reader.onload = function() {
-        var ncReader = new NetCDFReader(reader.result);
-        console.log(ncReader.getDataVariable("lat"));
-        // figure out the actual displays later I guess
-      }
-      reader.readAsArrayBuffer(uploadNC);
-    }
-  }
-  uploaded.click();
-}
-
-function upload_ncv4() {
-  var uploaded = document.createElement("input");
-  uploaded.type = "file";
-  uploaded.accept = ".nc";
-  uploaded.onchange = e => {
-    var uploadNC = e.target.files[0];
-    if (uploadNC) {
-      var reader = new FileReader();
-      reader.onload = function() {
-        var file = new hdf5.File(reader.result, uploaded.name);
-        var lats = file.get("latitude").value;
-        var longs = file.get("longitude").value;
-        var coords = []
-        for (var i = 0; i < lats.length; i++) {
-          coords.push([lats[i], longs[i]]);
-        }
-        map.addLayer(new VectorLayer({
-          source: new VectorSource(),
-          geometry: new MultiPoint({
-            coordinates: coords
-          })
-        }))
-      }
-    };
-    reader.readAsArrayBuffer(uploadNC);
-  }
-  uploaded.click();
-}*/
-
-/*
-
-var lines = [];
-
-const expr = document.getElementById('expr')
-const pretty = document.getElementById('pretty')
-const result = document.getElementById('result')
-const add_button = document.getElementById('line')
-let parenthesis = 'keep'
-let implicit = 'hide'
-
-const mj = function (tex) {
-    return MathJax.tex2svg(tex, {em: 16, ex: 6, display: false});
-}
-
-function change_pretty() {
-    let node = null
-  
-    try {
-      // parse the expression
-      node = math.parse(expr.value)
-  
-      // evaluate the result of the expression
-      //result.innerHTML = math.format(node.compile().evaluate())
-    }
-    catch (err) {
-      //result.innerHTML = '<span style="color: red;">' + err.toString() + '</span>'
-      console.log(err);
-    }
-  
-    try {
-      // export the expression to LaTeX
-      const latex = node ? node.toTex({parenthesis: parenthesis, implicit: implicit}) : '';
-      console.log('LaTeX expression:', latex);
-  
-      // display and re-render the expression
-      MathJax.typesetClear();
-      pretty.innerHTML = '';
-      pretty.appendChild(mj(latex));
-    }
-    catch (err) {
-      console.log(err);
-    }
-}
-*/
 
 var modelChangeX = 0;                                           // THESE VARIABLES NEED TO BE CHANGED WITH MODEL IMPLEMENTATION
 var modelChangeY = 0;                                           // AND EVALUATED WITHIN FOR LOOP
