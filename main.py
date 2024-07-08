@@ -16,6 +16,9 @@ from pprint import pprint
 import re
 from datetime import datetime
 import csv
+import pydap.client
+from pydap.client import open_url
+
 
 app = FastAPI(title="main-app")
 templates = Jinja2Templates(directory="templates")
@@ -108,6 +111,11 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 		except Exception as e:
 			print(e)
 			print("file upload failed")
+
+@app.get('/opendap/{data}')
+async def get_data(data):
+	dataset = open_url('https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/avg/runs/Averages_RUN_2024-07-04T00:00:00Z')
+	print(dataset.keys)
 
 '''@app.get("/static/netcdfjs/src/{filename}")
 async def get_parser(filename):

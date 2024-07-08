@@ -495,10 +495,10 @@ function make_url(start, duration) {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-
+      return;
     }
   }
-  xhttp.open("GET", urlString, true);
+  xhttp.open("GET", "/opendap/data", true);
   xhttp.send();
   console.log(urlString);
 }
