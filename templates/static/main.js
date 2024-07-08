@@ -1,3 +1,4 @@
+//export * from './lodash.js';
 import Map from 'https://cdn.skypack.dev/ol/Map.js';
 import View from 'https://cdn.skypack.dev/ol/View.js';
 import TileLayer from 'https://cdn.skypack.dev/ol/layer/Tile.js';
@@ -11,6 +12,11 @@ import Polyline from 'https://cdn.skypack.dev/ol/format/Polyline.js';
 import LineString from 'https://cdn.skypack.dev/ol/geom/LineString.js';
 import {useGeographic} from 'https://cdn.skypack.dev/ol/proj.js';
 import {Circle, Fill, Stroke, Style, Text} from 'https://cdn.skypack.dev/ol/style.js';
+import Cluster from 'https://cdn.skypack.dev/ol/source/Cluster.js';
+import Overlay from 'https://cdn.skypack.dev/ol/Overlay.js';
+import Event from 'https://cdn.skypack.dev/ol/events/Event.js';
+import debounce from './lodash.js';
+
 //import GeometryCollection from 'https://cdn.skypack.dev/ol/geom/GeometryCollection.js';
 //import {fromLonLat} from 'https://cdn.skypack.dev/ol/proj';
 
@@ -30,6 +36,12 @@ import {Circle, Fill, Stroke, Style, Text} from 'https://cdn.skypack.dev/ol/styl
 useGeographic();
 
 const addData = document.getElementById("addData");
+//const mapEl = document.getElementBy
+//const info = document.getElementById('info');
+const infoContainer = document.getElementById('popup');
+const infoContent = document.getElementById('popup-content');
+const infoCloser = document.getElementById('popup-closer');
+const layersList = document.getElementById('layersList');
 var typeValue = null;
 var source = new VectorSource();
 const myDom = {
@@ -49,6 +61,21 @@ const myDom = {
     outlineWidth: 3,
     maxreso: 1200
   },
+}
+
+const overlay = new Overlay({
+  element: infoContainer,
+  autoPan: {
+    animation: {
+      duration: 250,
+    },
+  },
+});
+
+class ArrowGeometry extends LineString {
+  constructor(coordinates) {
+    super(coordinates);
+  }
 }
 
 const openSans = document.createElement('link');
@@ -110,11 +137,138 @@ const createTextStyle = function (feature, resolution, dom) {
     rotation: rotation,
   });
 };
+/*
+// Get the needle image element
+const needle = document.getElementById('needle');
+
+// Variables to track mouse position and initial rotation
+let isDragging = false;
+let initialRotation;
+
+// Function to calculate angle from center to mouse position
+function getRotationFromMouse(event) {
+  const compassRect = document.querySelector('.compass').getBoundingClientRect();
+  const center = {
+    x: compassRect.left + compassRect.width / 2,
+    y: compassRect.top + compassRect.height / 2
+  };
+
+  const angle = Math.atan2(event.clientY - center.y, event.clientX - center.x);
+  return angle * (180 / Math.PI);
+}
+
+// Event listeners for mouse down, move, and up
+/*$('#needle').on('mousedown', function(event) {
+  isDragging = true;
+  initialRotation = getRotationFromMouse(event);
+});*/
+/*
+$('#needle').on('dragstart', function(event) {
+  initialRotation = getRotationFromMouse(event);
+})
+
+$('#needle').on('drag', function(event) {
+  var angle = getRotationFromMouse(event);
+  needle.style.transform = 'rotate(${angle}deg)';
+})
+
+//$('#needle').on()
+
+/*
+document.on('mousemove', function(event) {
+  if (isDragging) {
+    const currentRotation = getRotationFromMouse(event);
+    const rotationDelta = currentRotation - initialRotation;
+
+    needle.style.transform = `translate(-50%, -50%) rotate(${rotationDelta}deg)`;
+  }
+});
+
+document.on('mouseup', function() {
+  isDragging = false;
+});*/
+
+// Get the needle image element
+const needle = document.getElementById('needle');
+let isDragging = false;
+
+// Function to calculate angle from center to mouse position
+function getAngle(event) {
+  const compassRect = document.querySelector('.compass').getBoundingClientRect();
+  const center = {
+    x: compassRect.left + compassRect.width / 2,
+    y: compassRect.top + compassRect.height / 2
+  };
+  const mouse = {
+    x: event.clientX,
+    y: event.clientY
+  }
+  var angle = 0;
+  const ray = Math.sqrt(((mouse.x - center.x)**2) + ((mouse.y - center.y)**2));
+  if (mouse.x == center.x) {
+    if (mouse.y >= center.y) {
+      angle = 0;
+    }
+    else {
+      angle = 180;
+    }
+  }
+  else if (mouse.x < center.x) {
+    if (mouse.y == center.y) {
+      angle = -90;
+    }
+    else if (mouse.y > center.y) {    // X-, Y-
+      var divide = (mouse.x - center.x) / ray;
+      angle = (Math.abs(Math.acos(divide)) * (180 / Math.PI)) - 270;
+    }
+    else {     // X-, Y+
+      var divide = (mouse.x - center.x) / ray;
+      angle = -1 * ((Math.abs(Math.acos(divide)) * (180 / Math.PI)) - 90);
+    }
+  }
+  else {
+    if (mouse.y == center.y) {
+      angle = 90;
+    }
+    else if (mouse.y > center.y) {  // X+, Y-
+      var divide = (mouse.x - center.x) / ray;
+      angle = 90 - (-1 * Math.abs(Math.acos(divide)) * (180 / Math.PI));
+    }
+    else {      // X+, Y+
+      var divide = (mouse.x - center.x) / ray;
+      angle = 90 - (Math.abs(Math.acos(divide)) * (180 / Math.PI));
+    }
+  }
+  return angle;
+}
+
+// Function to update needle rotation
+function updateRotation(event) {
+  const newAngle = getAngle(event);
+  needle.style.transform = `translate(-50%, -50%) rotate(${newAngle}deg)`;
+}
+
+// Event listeners for mouse down, move, and up
+needle.addEventListener('mousedown', function(event) {
+  isDragging = true;
+});
+
+document.addEventListener('mousemove', function(event) {
+  if (isDragging) {
+    updateRotation(event);
+  }
+});
+
+document.addEventListener('mouseup', function() {
+  isDragging = false;
+});
+
+
 
 function pointStyleFunction(feature, resolution) {
   return new Style({
     image: new Circle({
-      radius: 10,
+      radius: 8,
       fill: new Fill({color: 'rgba(255, 0, 0, 0.1)'}),
       stroke: new Stroke({color: 'red', width: 1}),
     }),
@@ -129,6 +283,7 @@ const map = new Map({
       source: new OSM()
     })
   ],
+  overlays: [overlay],
   view: new View({
     center: [0, 0],
     zoom: 2
@@ -217,8 +372,8 @@ function upload_data() {
           if (this.readyState == 4 && this.status == 200) {
             var coords = []
             var points = JSON.parse(this.responseText);
-            var pointFeats = [];
-            console.log(points);
+            //var pointFeats = [];
+            //console.log(points);
             for (var point of points.coordinates) {
               coords.push([parseFloat(point[0]), parseFloat(point[1])])
               /*pointFeats.push(new Feature({
@@ -238,30 +393,34 @@ function upload_data() {
             }))
             var addFeatureEndpoint = new Feature({
               geometry: new Point(coords.slice(-1)[0]),
-              layout: "XY"
+              layout: "XY",
+              display_data: coords.slice(-1)[0][0].toFixed(6) + ", " + coords.slice(-1)[0][1].toFixed(6)
             })
-            var coordsLast = [parseFloat(coords.slice(-1)[0][0]).toFixed(6), parseFloat(coords.slice(-1)[0][1]).toFixed(6)];    //NaN for some reason???
+            //var coordsLast = [parseFloat(coords.slice(-1)[0][0]).toFixed(6), parseFloat(coords.slice(-1)[0][1]).toFixed(6)];
             addFeatureEndpoint.setStyle(new Style({        
               image: new Circle({
-                radius: 10,
+                radius: 8,
                 fill: new Fill({color: 'rgba(25, 96, 110, 1)'}),
-                stroke: new Stroke({color: 'rgba(15, 60, 80, 1)', width: 1}),
               }),
-              text: new Text({
+              /*text: new Text({
                 font: 'bold 16px sans-serif',
                 text: coordsLast.toString(),
                 textAlign: 'left',
                 textBaseline: 'bottom',
                 fill: new Fill({color: 'rgba(0, 0, 0, 1)'}),
                 stroke: new Stroke({color: 'rgba(255, 255, 255, 1)'})
-              })
+              })*/
             }))
             source.addFeature(addFeatureLine);
             source.addFeature(addFeatureEndpoint);
-            console.log(source);
+            //console.log(source);
             map.addLayer(new VectorLayer({
-              source: source
+              source: source,
+              title: uploadKML.name
             }))
+            update_layers();
+            //console.log(map);
+            //console.log(map.getLayers());
           }
         }
         if (typeValue == ".kml") {
@@ -325,6 +484,97 @@ function upload_data() {
     }
     uploaded.click();
   }*/
+}
+
+function make_url(start, duration) {
+  var urlString = "https://tds.marine.rutgers.edu/thredds/ncss/grid/roms/doppio/2017_da/avg/runs/Averages_RUN_";
+  const date = new Date();
+  let fileDate = date.toISOString();
+  var fileDateString = fileDate.slice(0, 11) + "00:00:00Z?";
+  urlString += fileDateString;// + "?var=ubar_eastward&var=vbar_northward&north=46.637&west=-80.546&east=-59.669&south=32.215&horizStride=1&time_start=" + start + "&time_end=";
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+
+    }
+  }
+  xhttp.open("GET", urlString, true);
+  xhttp.send();
+  console.log(urlString);
+}
+
+function render_arrows() {
+  var layers = map.getLayers();
+  var numLayers = layers.getLength();
+  for (var i = 1; i < numLayers; i++) {
+    if (layers.item(i).get('title') == "currents") {
+      map.removeLayer(layers.item(i));
+      break;
+    }
+  }
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+    }
+  }
+  //generate url
+  xhttp.open("POST", "", true);
+  xhttp.send(fileData);
+  // send xhttp request to get current data based on input start
+  //    date and duration
+  // divide map into x number of points, represented by pixels
+  // on map change, find latitude/longitude coordinates corresponding
+  //    to pixel location
+  // find nearest point in doppio model to provide current strength
+  //    and direction
+  //    - nearest point must be WITHIN a certain latitude/longitude
+  //          distance
+  //    - check resolution of doppio model
+  // based on strength, render same scale arrow with varying value
+  //    between black and white
+  //    - use a new vector layer with title of "currents"
+  return;
+}
+const debounced_render_arrows = debounce(render_arrows, 300);
+
+function update_layers() {
+  var layers = map.getLayers();
+  var numLayers = layers.getLength();
+  var displayed = [...layersList.getElementsByTagName("li")];
+  for(var i = 1; i < numLayers; i++) {
+    var inList = false;
+    for (var displayedLayer of displayed) {
+      if (layers.item(i).get('title') == displayedLayer.innerText) {
+        inList = true;
+      }
+    }
+    if (!inList) {
+      var newLayer = document.createElement("li");
+      newLayer.className = "list-group-item";
+      newLayer.innerText = layers.item(i).get('title');
+      layersList.appendChild(newLayer);
+    }
+  }
+}
+
+function change_utc() {
+  const now = new Date();
+  const start = document.getElementById("startDateTime");
+  const utc = document.getElementById("UTC");
+  if (utc.checked == true) {
+    const utcString = now.toISOString().slice(0, 16);
+    start.value = utcString;
+  }
+  else {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const localString = `${year}-${month}-${day}T${hours}:${minutes}`;
+    start.value = localString;
+  }
 }
 
 
@@ -407,57 +657,46 @@ function rec_calc(graphic, origCoords, totTime, timePassed, soFar) {
   }
 }
 
-function add_line(coordinates, name, date, model, color, increments) {
-    const lineSymbol = {
-      type: "simple-line",
-      color: color,
-      width: 1
-    };
-    const lineAtt = {
-      Name: name,
-      Date: date,
-      Model: model,
-    };
-    const polylineGraphic = new Graphic({
-      geometry: new Polyline({
-        paths: [
-          [-74, 37],
-          [-75, 35],
-          [-76, 32]
-        ]
-      }),
-      symbol: lineSymbol,
-      attributes: lineAtt,
-      popupTemplate: {
-        title: "Path",
-        content: [
-          {
-            type: "fields",
-            fieldInfos: [
-              {
-                fieldName: "Name"
-              },
-              {
-                fieldName: "Date"
-              },
-              {
-                fieldName: "Model"
-              }
-            ]
-          }
-        ]
-      }
-    });
-    //var soFar = []
-    //rec_calc(polylineGraphic, coordinates, 10, 0, []);
-    //geometryEngine.union(polylineGraphic.geometry);
-    view.graphics.add(polylineGraphic);
-}
-
 $(document).ready(function () {
   $('#dataType a').on('click', function () {
     typeValue = ($(this).text());
   })
 })
-addData.addEventListener("click", upload_data.bind(this));
-//add_button.addEventListener("click", add_line.bind(this, [-74, 37], "glider 1", "5/16/2024", "none", [20, 3, 252], 0));
+$("#addData").on("click", upload_data);
+$("#UTC").on("click", change_utc);
+map.on("click", function(event) {
+  map.forEachFeatureAtPixel(event.pixel, function(feature) {
+    var data = feature.get("display_data");
+    if (data) {
+      infoContent.innerText = data;
+      overlay.setPosition(event.coordinate);
+    }
+  });
+});
+// order:
+// click run model
+// make url
+// get current data
+// send current data to backend
+// run model w/filter
+// return filter results to frontend
+// display filter results
+$("#run").on("click", function() {
+  var start  = document.getElementById("startDateTime");
+  var duration = document.getElementById("duration");
+  var url = make_url(start.value, duration.value);
+})
+var view = map.getView();
+$("#currents").on("click", function() {
+  if (document.getElementById("currents").checked) {
+    view.on("change:resolution", debounced_render_arrows);
+  }
+  else {
+    view.un("change:resolution", debounced_render_arrows);
+  }
+});
+infoCloser.addEventListener("click", function() {
+  overlay.setPosition(undefined);
+  infoCloser.blur();
+  return false;
+});

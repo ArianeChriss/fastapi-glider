@@ -2,7 +2,7 @@
 <html data-bs-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <title>Autonomous Systems Bootcamp 2024</title>
+    <title>Trajectory Model</title>
     <link rel="stylesheet" href="./static/index.css" type="text/css">
     <link href="https://cdn.skypack.dev/ol/ol.css" rel="stylesheet">
     <!--link href="https://basemapstyles-api.arcgis.com/arcgis/rest/services/styles/v2/webmaps/arcgis/oceans/base"-->
@@ -25,14 +25,20 @@
   </head>
   <body>
     <div class="wrapper">
-      <div class="header">
+      <!--div class="header">
         <div class="title">
           Glider Trajectory Estimation Model
         </div>
-      </div>
-      <div class="line"></div>
+      </div-->
+      <!--div class="line"></div-->
       <!--div class="content" id="viewDiv"></div-->
-      <div class="content" id="map"></div>
+      <div class="content" id="map">
+        <!--div id="info" class='ol-control-panel ol-unselectable ol-control'></div-->
+        <div id="popup" class="ol-popup">
+          <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+          <div id="popup-content"></div>
+        </div>
+      </div>
       <div class="sidebar">
         <div class="accordion accordion-flush" id="accordionExample">
           <div class="accordion-item">
@@ -43,14 +49,13 @@
             </h2>
             <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                Add previous data files here
-                <br>
+                Add previous data files or enter a starting location here
                 <br>
                 Note: too many files may result in the program responding slowly
                 <br>
                 <br>
-                <div class="dropdown">
-                  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <div class="dropdown d-grid gap-2">
+                  <button class="btn teal-btn dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     File Type
                   </button>
                   <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="dataType">
@@ -61,11 +66,12 @@
                   </div>
                 </div>
                 <br>
-                <button id="addData" type="button" class="btn btn-outline-dark">Upload</button>
+                <div class="d-grid gap-2">
+                  <button id="addData" type="button" class="btn teal-btn">Upload</button></div>
               </div>
             </div>
           </div>
-          <div class="accordion-item">
+          <!--div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
                 Model Parameters
@@ -76,40 +82,55 @@
                 Number of particles
                 <br>
                 # of Headings
-                <br>
-                Heading # 1
-                <br>
-                Duration # 1
               </div>
             </div>
-          </div>
+          </div-->
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                Current Data
+                Paths
               </button>
             </h2>
             <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                Data source
+                <div class="compass center">
+                  <img id="needle" class="needle" src='./static/needle.png';>
+                </div>
+                <br>
+                <div class="form-check form-switch">
+                  <label for="UTC">UTC</label>
+                  <input class="form-check-input" type="checkbox" role="switch" id="UTC" name="UTC" unchecked>
+                </div>
+                <br>
+                <div>
+                  <label for="startDateTime">Start time:</label>
+                  <input type="datetime-local" id="startDateTime" name="startDateTime">
+                </div>
+                <br>
+                <div>
+                  <label for="duration">Duration:</label>
+                  <input type="number" id="duration" name="duration">
+                </div>
+                <br>
+                <label for="color" class="form-label">Particle Color:</label>
+                <input type="color" class="form-control form-control-color" id="color" value="#563d7c">
               </div>
+              <div class="d-grid gap-2 px-3">
+                <button class="btn teal-btn" type="button" id="run">Run Filter</button>
             </div>
           </div>
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                Style
+                Currents
               </button>
             </h2>
             <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                Switch to line/points
-                <br>
-                Change Color
-                <br>
-                Change Weight
-                <br>
-                Save as Layer
+                <div class="form-check form-switch">
+                  <label for="currents">Display Currents</label>
+                  <input class="form-check-input" type="checkbox" role="switch" id="currents" name="currents" unchecked>
+                </div>
               </div>
             </div>
           </div>
@@ -121,11 +142,7 @@
             </h2>
             <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                <ul class="list-group">
-                  <li class="list-group-item">Layer 1</li>
-                  <li class="list-group-item">Layer 2</li>
-                  <li class="list-group-item">Layer 3</li>
-                </ul>
+                <ul id="layersList" class="list-group"></ul>
               </div>
             </div>
           </div>
