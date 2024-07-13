@@ -14,10 +14,11 @@ from io import StringIO
 import json
 from pprint import pprint
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import csv
 import pydap.client
 from pydap.client import open_url
+import dateutil
 
 
 app = FastAPI(title="main-app")
@@ -28,13 +29,13 @@ origins = [
     "*"
 ]
 
-app.add_middleware(
+'''app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-)
+)'''
 
 @app.get("/")
 def read_root(request: Request):
@@ -112,10 +113,44 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 			print(e)
 			print("file upload failed")
 
-@app.get('/opendap/{data}')
-async def get_data(data):
-	dataset = open_url('https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/avg/runs/Averages_RUN_2024-07-04T00:00:00Z')
-	print(dataset.keys)
+@app.get('/opendap/{datetime}/{duration}')
+async def get_data(datetime, duration):
+	pre_url = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'
+	fulldatetime = dateutil.parser.isoparse(datetime)
+	origdatetime = "2017-11-01T00:00:00Z"
+	fullorigdatetime = dateutil.parser.isoparse(origdatetime)
+	timeDiff = fulldatetime - fullorigdatetime
+	hourDiff = timeDiff.total_seconds() / 3600
+	trying = False
+	tryNum = 0
+	while ((not trying) and (tryNum < 5)):
+		try:
+			dataset = open_url(pre_url + str(fulldatetime.date() - timedelta(days=tryNum)) + "T00:00:00Z")
+		except Exception as e:
+			print(e)
+			print("data unavailable for selected date/time")
+			tryNum += 1
+		else:
+			trying = True
+	if (dataset):
+		if (dataset['time'][:][-1].data < int(hourDiff) + int(duration)):
+			print("data unavailable for selected date/time")
+			return Response(status_code=200)
+		else:
+			timeIndex = 0
+			length = dataset['time'].shape[0]
+			timeCheck = int(hourDiff) + int(duration)
+			while ((int(dataset['time'][:][timeIndex].data) != timeCheck)) and (timeIndex < length):
+				timeIndex += 1
+			times = dataset['time'][timeIndex:int(timeIndex + int(duration))].data.tolist()
+			longs = dataset['lon_rho'][timeIndex:int(timeIndex + int(duration))].data.tolist()
+			lats = dataset['lat_rho'][timeIndex:int(timeIndex + int(duration))].data.tolist()
+			ubarEast = dataset['ubar_eastward'][timeIndex:int(timeIndex + int(duration))].data.tolist()
+			vbarNorth = dataset['vbar_northward'][timeIndex:int(timeIndex + int(duration))].data.tolist()
+			pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": ubarEast, "northward": vbarNorth})
+			return Response(content=pointsJSON, status_code=200)
+	else:
+		return Response(status_code=200)
 
 '''@app.get("/static/netcdfjs/src/{filename}")
 async def get_parser(filename):
@@ -127,4 +162,4 @@ async def get_parser(filename):
 	return FileResponse(filename)'''
 
 if (__name__=="__main__"):
-	run(app, port=8080)
+	run("main:app", port=8080, reload=True)

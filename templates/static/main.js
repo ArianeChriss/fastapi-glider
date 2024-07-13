@@ -38,6 +38,7 @@ useGeographic();
 const addData = document.getElementById("addData");
 //const mapEl = document.getElementBy
 //const info = document.getElementById('info');
+var filterRun = false;
 const infoContainer = document.getElementById('popup');
 const infoContent = document.getElementById('popup-content');
 const infoCloser = document.getElementById('popup-closer');
@@ -486,7 +487,18 @@ function upload_data() {
   }*/
 }
 
-function make_url(start, duration) {
+/*function make_url(start, duration) {
+  /*var dir_check = "https://tds.marine.rutgers.edu/thredds/catalog/roms/doppio/2017_da/his/runs/catalog.html";
+  var check_xhttp = new XMLHttpRequest();
+  check_xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(check_xhttp.response);
+      return;
+    }
+  }
+  check_xhttp.open("GET", dir_check, true);
+  check_xhttp.send();
+  //console.log(urlString);
   var urlString = "https://tds.marine.rutgers.edu/thredds/ncss/grid/roms/doppio/2017_da/avg/runs/Averages_RUN_";
   const date = new Date();
   let fileDate = date.toISOString();
@@ -498,16 +510,20 @@ function make_url(start, duration) {
       return;
     }
   }
-  xhttp.open("GET", "/opendap/data", true);
+  xhttp.open("GET", "/opendap/"+start+"/"+duration, true);
   xhttp.send();
   console.log(urlString);
+}*/
+
+function run_filter(datetime, duration) {
+  filterRun = true;
 }
 
-function render_arrows() {
-  var layers = map.getLayers();
+function get_currents() {            // gets time and duration and sends to backend, then renders data to map
+  var layers = map.getLayers();       // if filter has been run and layer is just invisible, toggles visibility
   var numLayers = layers.getLength();
   for (var i = 1; i < numLayers; i++) {
-    if (layers.item(i).get('title') == "currents") {
+    if ((layers.item(i).get('title') == "currents") && (filterRun == false)) {
       map.removeLayer(layers.item(i));
       break;
     }
@@ -515,11 +531,23 @@ function render_arrows() {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
+      // DISPLAY RENDERING GOES HERE
     }
   }
-  //generate url
-  xhttp.open("POST", "", true);
-  xhttp.send(fileData);
+  var datetime = document.getElementById("startDateTime").getAttribute("data-utcdatetime");
+  if (datetime == "") {
+    display_error("Please select a start time");
+    console.log("Please select a start time");
+    return;
+  }
+  var duration = parseInt(document.getElementById("duration").value);
+  if (duration == NaN) {
+    display_error("Please enter an integer duration");
+    console.log("Please enter an integer duration");
+    return;
+  }
+  xhttp.open("GET", "/opendap/"+datetime+"/"+duration, true);
+  xhttp.send();
   // send xhttp request to get current data based on input start
   //    date and duration
   // divide map into x number of points, represented by pixels
@@ -533,12 +561,30 @@ function render_arrows() {
   // based on strength, render same scale arrow with varying value
   //    between black and white
   //    - use a new vector layer with title of "currents"
+}
+
+function render_arrows(visibility) {            // show retrieved current data as vector field
+  var layers = map.getLayers();       // if filter has been run and layer is just invisible, toggles visibility
+  var numLayers = layers.getLength();
+  for (var i = 1; i < numLayers; i++) {
+    if (((layers.item(i).get('title') == "currents") && (filterRun == true)) && (visibility == true)) {
+      layers.item(i).setVisible(true);
+    }
+    else if (((layers.item(i).get('title') == "currents") && (filterRun == true)) && (visibility == false)) {
+      layers.item(i).setVisible(false);
+    }
+    else if ((layers.item(i).get('title') == "currents") && (filterRun == false)) {
+      map.removeLayer(layers.item(i));
+      break;
+    }
+  }
+  // code to actually show currents as vector field
   return;
 }
-const debounced_render_arrows = debounce(render_arrows, 300);
+const debounced_render_arrows = debounce(render_arrows, 300);     // gives a bit of a respite to the map renderer via delay after update, time can probably be increased
 
-function update_layers() {
-  var layers = map.getLayers();
+function update_layers() {          // updates the dropdown list of layers with the layers rendered in the map
+  var layers = map.getLayers();     // needs to be called whenever a new layer is added to the map
   var numLayers = layers.getLength();
   var displayed = [...layersList.getElementsByTagName("li")];
   for(var i = 1; i < numLayers; i++) {
@@ -557,13 +603,14 @@ function update_layers() {
   }
 }
 
-function change_utc() {
+function change_utc() {             // switches formatting and time of datetime element to UTC or local
   const now = new Date();
   const start = document.getElementById("startDateTime");
   const utc = document.getElementById("UTC");
   if (utc.checked == true) {
     const utcString = now.toISOString().slice(0, 16);
     start.value = utcString;
+    start.setAttribute("data-utcdatetime", now.toISOString());
   }
   else {
     const now = new Date();
@@ -574,87 +621,22 @@ function change_utc() {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const localString = `${year}-${month}-${day}T${hours}:${minutes}`;
     start.value = localString;
+    start.setAttribute("data-utcdatetime",  now.toISOString());
   }
+  filterRun = false;
 }
 
-
-var modelChangeX = 0;                                           // THESE VARIABLES NEED TO BE CHANGED WITH MODEL IMPLEMENTATION
-var modelChangeY = 0;                                           // AND EVALUATED WITHIN FOR LOOP
-var modelChangeDist = 1;
-
-var directions = {
-  0: "E",
-  45: "NE",
-  90: "N",
-  135: "NW",
-  180: "W",
-  225: "SW",
-  270: "S",
-  315: "SE",
+function user_datechange() {        // switched the later-accessed data-utcdatetime data storage in the datetime-local html element
+  var start = document.getElementById("startDateTime");
+  var utcSwitch = document.getElementById("UTC");
+  if (utcSwitch.value == true) {
+    start.setAttribute("data-utcdatetime", new Date(start.value).toISOString());
+  }
+  filterRun = false;
 }
 
-function rec_calc(graphic, origCoords, totTime, timePassed, soFar) {
-  for (var j = 0; j < 360; j += 45) {
-    modelChangeX = modelChangeDist * Math.cos(j * Math.PI / 180);
-    modelChangeY = modelChangeDist * Math.sin(j * Math.PI / 180);
-    var newCoords = [
-      origCoords[0] + modelChangeX,
-      origCoords[1] + modelChangeY
-    ]
-    
-    var tempSoFar = soFar.concat([j]);
-    graphic.geometry.addPath([origCoords, newCoords]);  
-    if (totTime - timePassed > 0) {
-      rec_calc(graphic, newCoords, totTime, timePassed + 2, tempSoFar);
-    }
-    else {
-      const pointSymbol = {
-        type: "simple-marker",
-        color: [60, 20, 252],
-        outline: {
-          color: [255, 255, 255],
-          width: 1
-        }
-      };
-      var dirs = []
-      for (var i = 0; i < tempSoFar.length; i++) {
-        dirs.push(directions[tempSoFar[i]]);
-      }
-      const pointAtt = {
-        Time: timePassed,
-        Coordinates: newCoords,
-        Paths: dirs,
-      };
-      const pointGraphic = new Graphic({
-        geometry: new Point({
-          x: newCoords[0],
-          y: newCoords[1]
-        }),
-        symbol: pointSymbol,
-        attributes: pointAtt,
-        popupTemplate: {
-          title: "Endpoint",
-          content: [
-            {
-              type: "fields",
-              fieldInfos: [
-                {
-                  fieldName: "Time"
-                },
-                {
-                  fieldName: "Coordinates"
-                },
-                {
-                  fieldName: "Paths"
-                }
-              ]
-            }
-          ]
-        }
-      });
-      //view.graphics.add(pointGraphic);
-    }
-  }
+function display_error(message) {
+  return;
 }
 
 $(document).ready(function () {
@@ -673,26 +655,33 @@ map.on("click", function(event) {
     }
   });
 });
+$("#startDateTime").on("change", user_datechange);
 // order:
 // click run model
-// make url
-// get current data
-// send current data to backend
+// send date in UTC and duration to backend
 // run model w/filter
 // return filter results to frontend
 // display filter results
 $("#run").on("click", function() {
-  var start  = document.getElementById("startDateTime");
-  var duration = document.getElementById("duration");
-  var url = make_url(start.value, duration.value);
+  var startElement = document.getElementById("startDateTime");
+  var startTime = startElement.getAttribute("data-utcdatetime");
+  var duration = parseInt(document.getElementById("duration").value);
+  run_filter(startTime, duration);
+  return;
 })
+$
 var view = map.getView();
 $("#currents").on("click", function() {
   if (document.getElementById("currents").checked) {
-    view.on("change:resolution", debounced_render_arrows);
+    if (filterRun == true) {
+      get_currents();
+      render_arrows(true);
+      view.on("change:resolution", debounced_render_arrows);
+    }
   }
   else {
     view.un("change:resolution", debounced_render_arrows);
+    render_arrows(false);
   }
 });
 infoCloser.addEventListener("click", function() {
