@@ -2,6 +2,8 @@
 import Map from 'https://cdn.skypack.dev/ol/Map.js';
 import View from 'https://cdn.skypack.dev/ol/View.js';
 import TileLayer from 'https://cdn.skypack.dev/ol/layer/Tile.js';
+//import { WebGLPointsLayer, WebGLPoints } from 'https://cdn.skypack.dev/ol/layer';
+import WebGLPointsLayer from 'https://cdn.skypack.dev/ol/layer/WebGLPoints.js';
 import OSM from 'https://cdn.skypack.dev/ol/source/OSM.js';
 //import KML from 'https://cdn.skypack.dev/ol/format/KML.js';
 import VectorSource from 'https://cdn.skypack.dev/ol/source/Vector.js';
@@ -10,26 +12,28 @@ import Feature from 'https://cdn.skypack.dev/ol/Feature.js';
 import Point from 'https://cdn.skypack.dev/ol/geom/Point.js';
 import Polyline from 'https://cdn.skypack.dev/ol/format/Polyline.js';
 import LineString from 'https://cdn.skypack.dev/ol/geom/LineString.js';
-import {useGeographic} from 'https://cdn.skypack.dev/ol/proj.js';
-import {Circle, Fill, Stroke, Style, Text} from 'https://cdn.skypack.dev/ol/style.js';
+import { fromLonLat } from 'https://cdn.skypack.dev/ol/proj';
+import GeoJSON from 'https://cdn.skypack.dev/ol/format/GeoJSON';
+import {useGeographic
+} from 'https://cdn.skypack.dev/ol/proj.js';
+import {Circle, Fill, Stroke, Style, Text, Icon
+} from 'https://cdn.skypack.dev/ol/style.js';
 import Cluster from 'https://cdn.skypack.dev/ol/source/Cluster.js';
 import Overlay from 'https://cdn.skypack.dev/ol/Overlay.js';
 import Event from 'https://cdn.skypack.dev/ol/events/Event.js';
-import debounce from './lodash.js';
-
+import debounce from 'https://cdn.jsdelivr.net/npm/lodash@4.17.21/+esm';
+import numjs from 'https://cdn.jsdelivr.net/npm/numjs@0.16.1/+esm';
+//import debounce from lodash;
+/*var projectName = require("@scope/lodash")*/
 //import GeometryCollection from 'https://cdn.skypack.dev/ol/geom/GeometryCollection.js';
 //import {fromLonLat} from 'https://cdn.skypack.dev/ol/proj';
-
-
 //import * as netcdf4Async from 'https://esm.run/netcdf4-async';
 //import * as hdf5 from './index.js';//'https://cdn.jsdelivr.net/npm/jsfive@0.3.10/dist/browser/hdf5.js';
 //import h5lt from 'hdf5';
-
 //const NetCDFReader = require('./node_modules/netcdfjs/src/parser.js');
 //import { NetCDFReader } from './index.js';
 //import * as Featureloader from 'https://cdn.skypack.dev/ol/featureloader.js';
 //import NetCDFReader from './netcdfjs/lib-esm/parser';
-
 //import * as CsvReadableStream from './csv-parser.js';
 //import * as Fs from './fs.js';
 
@@ -44,6 +48,8 @@ const infoContent = document.getElementById('popup-content');
 const infoCloser = document.getElementById('popup-closer');
 const layersList = document.getElementById('layersList');
 var typeValue = null;
+var currentData = null;
+var currentSource = null;
 var source = new VectorSource();
 const myDom = {
   points: {
@@ -80,7 +86,7 @@ class ArrowGeometry extends LineString {
 }
 
 const openSans = document.createElement('link');
-openSans.href = 'https://fonts.googleapis.com/css?family=Open+Sans';
+openSans.href = 'https: //fonts.googleapis.com/css?family=Open+Sans';
 openSans.rel = 'stylesheet';
 document.head.appendChild(openSans);
 //var mapLayers = [];
@@ -100,7 +106,8 @@ const getText = function (feature, resolution, dom) {
     type == 'wrap' &&
     (!dom.placement || dom.placement.value != 'line')
   ) {
-    text = stringDivider(text, 16, '\n');
+    text = stringDivider(text,
+    16, '\n');
   }
 
   return text;
@@ -111,8 +118,10 @@ const createTextStyle = function (feature, resolution, dom) {
   const baseline = dom.baseline.value;
   const size = dom.size.value;
   const height = dom.height.value;
-  const offsetX = parseInt(dom.offsetX.value, 10);
-  const offsetY = parseInt(dom.offsetY.value, 10);
+  const offsetX = parseInt(dom.offsetX.value,
+  10);
+  const offsetY = parseInt(dom.offsetY.value,
+  10);
   const weight = dom.weight.value;
   const placement = dom.placement ? dom.placement.value : undefined;
   const maxAngle = dom.maxangle ? parseFloat(dom.maxangle.value) : undefined;
@@ -121,15 +130,18 @@ const createTextStyle = function (feature, resolution, dom) {
   const font = weight + ' ' + size + '/' + height + ' ' + dom.font.value;
   const fillColor = dom.color.value;
   const outlineColor = dom.outline.value;
-  const outlineWidth = parseInt(dom.outlineWidth.value, 10);
+  const outlineWidth = parseInt(dom.outlineWidth.value,
+  10);
 
   return new Text({
     textAlign: align == '' ? undefined : align,
     textBaseline: baseline,
     font: font,
     text: getText(feature, resolution, dom),
-    fill: new Fill({color: fillColor}),
-    stroke: new Stroke({color: outlineColor, width: outlineWidth}),
+    fill: new Fill({color: fillColor
+    }),
+    stroke: new Stroke({color: outlineColor, width: outlineWidth
+    }),
     offsetX: offsetX,
     offsetY: offsetY,
     placement: placement,
@@ -188,7 +200,6 @@ document.on('mousemove', function(event) {
 document.on('mouseup', function() {
   isDragging = false;
 });*/
-
 // Get the needle image element
 const needle = document.getElementById('needle');
 let isDragging = false;
@@ -218,11 +229,11 @@ function getAngle(event) {
     if (mouse.y == center.y) {
       angle = -90;
     }
-    else if (mouse.y > center.y) {    // X-, Y-
+    else if (mouse.y > center.y) { // X-, Y-
       var divide = (mouse.x - center.x) / ray;
       angle = (Math.abs(Math.acos(divide)) * (180 / Math.PI)) - 270;
     }
-    else {     // X-, Y+
+    else { // X-, Y+
       var divide = (mouse.x - center.x) / ray;
       angle = -1 * ((Math.abs(Math.acos(divide)) * (180 / Math.PI)) - 90);
     }
@@ -231,24 +242,24 @@ function getAngle(event) {
     if (mouse.y == center.y) {
       angle = 90;
     }
-    else if (mouse.y > center.y) {  // X+, Y-
+    else if (mouse.y > center.y) { // X+, Y-
       var divide = (mouse.x - center.x) / ray;
       angle = 90 - (-1 * Math.abs(Math.acos(divide)) * (180 / Math.PI));
     }
-    else {      // X+, Y+
+    else { // X+, Y+
       var divide = (mouse.x - center.x) / ray;
       angle = 90 - (Math.abs(Math.acos(divide)) * (180 / Math.PI));
     }
   }
   return angle;
 }
-
 // Function to update needle rotation
 function updateRotation(event) {
   const newAngle = getAngle(event);
-  needle.style.transform = `translate(-50%, -50%) rotate(${newAngle}deg)`;
+  needle.style.transform = `translate(-50%,
+  -50%) rotate(${newAngle
+  }deg)`;
 }
-
 // Event listeners for mouse down, move, and up
 needle.addEventListener('mousedown', function(event) {
   isDragging = true;
@@ -270,8 +281,9 @@ function pointStyleFunction(feature, resolution) {
   return new Style({
     image: new Circle({
       radius: 8,
-      fill: new Fill({color: 'rgba(255, 0, 0, 0.1)'}),
-      stroke: new Stroke({color: 'red', width: 1}),
+      fill: new Fill({color: 'rgba(255,0,0,0.1)'}),
+      stroke: new Stroke({color: 'red', width: 1
+      }),
     }),
     text: createTextStyle(feature, resolution, myDom.points),
   });
@@ -284,9 +296,13 @@ const map = new Map({
       source: new OSM()
     })
   ],
-  overlays: [overlay],
+  overlays: [overlay
+  ],
   view: new View({
-    center: [0, 0],
+    center: [
+      0,
+      0
+    ],
     zoom: 2
   })
 });
@@ -366,7 +382,9 @@ function upload_data() {
       uploaded.accept = ".csv";
     }
     uploaded.onchange = e => {
-      var uploadKML = e.target.files[0];
+      var uploadKML = e.target.files[
+        0
+      ];
       if (uploadKML) {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
@@ -376,7 +394,12 @@ function upload_data() {
             //var pointFeats = [];
             //console.log(points);
             for (var point of points.coordinates) {
-              coords.push([parseFloat(point[0]), parseFloat(point[1])])
+              coords.push([parseFloat(point[
+                  0
+                ]), parseFloat(point[
+                  1
+                ])
+              ])
               /*pointFeats.push(new Feature({
                 geometry: new Point([parseFloat(point[0]), parseFloat(point[1])]),
                 layout: "XY"
@@ -393,15 +416,25 @@ function upload_data() {
               })
             }))
             var addFeatureEndpoint = new Feature({
-              geometry: new Point(coords.slice(-1)[0]),
+              geometry: new Point(coords.slice(-1)[
+                0
+              ]),
               layout: "XY",
-              display_data: coords.slice(-1)[0][0].toFixed(6) + ", " + coords.slice(-1)[0][1].toFixed(6)
+              display_data: coords.slice(-1)[
+                0
+              ][
+                0
+              ].toFixed(6) + ", " + coords.slice(-1)[
+                0
+              ][
+                1
+              ].toFixed(6)
             })
             //var coordsLast = [parseFloat(coords.slice(-1)[0][0]).toFixed(6), parseFloat(coords.slice(-1)[0][1]).toFixed(6)];
             addFeatureEndpoint.setStyle(new Style({        
               image: new Circle({
                 radius: 8,
-                fill: new Fill({color: 'rgba(25, 96, 110, 1)'}),
+                fill: new Fill({color: 'rgba(25,96,110,1)'}),
               }),
               /*text: new Text({
                 font: 'bold 16px sans-serif',
@@ -425,10 +458,12 @@ function upload_data() {
           }
         }
         if (typeValue == ".kml") {
-          xhttp.open("POST", "upload/kml", true);
+          xhttp.open("POST",
+          "upload/kml", true);
         }
         else if (typeValue == ".csv") {
-          xhttp.open("POST", "upload/csv", true);
+          xhttp.open("POST",
+          "upload/csv", true);
         }
         const fileData = new FormData();
         fileData.append("file", uploadKML);
@@ -486,7 +521,6 @@ function upload_data() {
     uploaded.click();
   }*/
 }
-
 /*function make_url(start, duration) {
   /*var dir_check = "https://tds.marine.rutgers.edu/thredds/catalog/roms/doppio/2017_da/his/runs/catalog.html";
   var check_xhttp = new XMLHttpRequest();
@@ -519,19 +553,13 @@ function run_filter(datetime, duration) {
   filterRun = true;
 }
 
-function get_currents() {            // gets time and duration and sends to backend, then renders data to map
-  var layers = map.getLayers();       // if filter has been run and layer is just invisible, toggles visibility
+function get_currents() { // gets time and duration and sends to backend, then renders data to map
+  var layers = map.getLayers(); // if filter has been run and layer is just invisible, toggles visibility
   var numLayers = layers.getLength();
   for (var i = 1; i < numLayers; i++) {
     if ((layers.item(i).get('title') == "currents") && (filterRun == false)) {
       map.removeLayer(layers.item(i));
       break;
-    }
-  }
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      // DISPLAY RENDERING GOES HERE
     }
   }
   var datetime = document.getElementById("startDateTime").getAttribute("data-utcdatetime");
@@ -546,7 +574,18 @@ function get_currents() {            // gets time and duration and sends to back
     console.log("Please enter an integer duration");
     return;
   }
-  xhttp.open("GET", "/opendap/"+datetime+"/"+duration, true);
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      currentData = xhttp.responseText;
+      var timeslider = document.getElementById('timeRange');
+      timeslider.setAttribute("max", duration);
+      // DISPLAY RENDERING GOES HERE
+      
+    }
+  }
+  xhttp.open("GET",
+  "/opendap/"+datetime+"/"+duration, true);
   xhttp.send();
   // send xhttp request to get current data based on input start
   //    date and duration
@@ -563,8 +602,8 @@ function get_currents() {            // gets time and duration and sends to back
   //    - use a new vector layer with title of "currents"
 }
 
-function render_arrows(visibility) {            // show retrieved current data as vector field
-  var layers = map.getLayers();       // if filter has been run and layer is just invisible, toggles visibility
+function render_arrows(visibility, time) { // show retrieved current data as vector field
+  var layers = map.getLayers(); // if filter has been run and layer is just invisible, toggles visibility
   var numLayers = layers.getLength();
   for (var i = 1; i < numLayers; i++) {
     if (((layers.item(i).get('title') == "currents") && (filterRun == true)) && (visibility == true)) {
@@ -579,14 +618,64 @@ function render_arrows(visibility) {            // show retrieved current data a
     }
   }
   // code to actually show currents as vector field
+  var timeslider = document.getElementById('timeRange');
+  var data = JSON.parse(currentData.replace(/\bNaN\b/g, "null"));
+  currentSource = JSON.parse("{\"features\": []}");
+  for (var i = 0; i < data.time.length; i++) {
+    for (var j = 0; j < data.longs[i].length; j++) {
+      var tempLong = parseFloat(data.longs[i][j]);
+      var tempLat = parseFloat(data.lats[i][j]);
+      if ((tempLong != NaN) && (tempLat != NaN)) {
+        var tempRotation = 90;
+        // don't forget to check for NaNs
+        currentSource.features[j] = {
+          "type": "Feature",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [tempLong, tempLat],
+          },
+          "properties": {
+            "rotation": tempRotation
+          }
+        }
+      }
+    }
+  }
+  var geoJsonFormat = new GeoJSON();
+  var geoJsonObject = geoJsonFormat.writeFeaturesObject(currentSource.features);
+  var features = geoJsonFormat.readFeatures(geoJsonObject);
+  console.log(features);
+  var pointsLayer = new WebGLPointsLayer({
+    source: new VectorSource({
+      features: features.map(feature => {
+        const point = feature.getGeometry();
+        const rotation = feature.get('rotation');
+
+        const iconStyle = new Style({
+          image: new Icon({
+            src: './static/current.png',
+            anchor: [0.5, 0.5],
+            rotateWithView: true,
+            rotation: rotation * Math.PI / 180,
+          }),
+        });
+        feature.setStyle(iconStyle);
+        return feature;
+      })
+    })
+  })
+  map.addLayer(pointsLayer);
+  //var pointFeats = [];
+  //console.log(points);
   return;
 }
-const debounced_render_arrows = debounce(render_arrows, 300);     // gives a bit of a respite to the map renderer via delay after update, time can probably be increased
+const debounced_render_arrows = debounce(render_arrows, 300); // gives a bit of a respite to the map renderer via delay after update, time can probably be increased
 
-function update_layers() {          // updates the dropdown list of layers with the layers rendered in the map
-  var layers = map.getLayers();     // needs to be called whenever a new layer is added to the map
+function update_layers() { // updates the dropdown list of layers with the layers rendered in the map
+  var layers = map.getLayers(); // needs to be called whenever a new layer is added to the map
   var numLayers = layers.getLength();
-  var displayed = [...layersList.getElementsByTagName("li")];
+  var displayed = [...layersList.getElementsByTagName("li")
+  ];
   for(var i = 1; i < numLayers; i++) {
     var inList = false;
     for (var displayedLayer of displayed) {
@@ -603,12 +692,13 @@ function update_layers() {          // updates the dropdown list of layers with 
   }
 }
 
-function change_utc() {             // switches formatting and time of datetime element to UTC or local
+function change_utc() { // switches formatting and time of datetime element to UTC or local
   const now = new Date();
   const start = document.getElementById("startDateTime");
   const utc = document.getElementById("UTC");
   if (utc.checked == true) {
-    const utcString = now.toISOString().slice(0, 16);
+    const utcString = now.toISOString().slice(0,
+    16);
     start.value = utcString;
     start.setAttribute("data-utcdatetime", now.toISOString());
   }
@@ -619,14 +709,19 @@ function change_utc() {             // switches formatting and time of datetime 
     const day = String(now.getDate()).padStart(2, '0');
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    const localString = `${year}-${month}-${day}T${hours}:${minutes}`;
+    const localString = `${year
+    }-${month
+    }-${day
+    }T${hours
+    }:${minutes
+    }`;
     start.value = localString;
     start.setAttribute("data-utcdatetime",  now.toISOString());
   }
   filterRun = false;
 }
 
-function user_datechange() {        // switched the later-accessed data-utcdatetime data storage in the datetime-local html element
+function user_datechange() { // switched the later-accessed data-utcdatetime data storage in the datetime-local html element
   var start = document.getElementById("startDateTime");
   var utcSwitch = document.getElementById("UTC");
   if (utcSwitch.value == true) {
@@ -667,6 +762,7 @@ $("#run").on("click", function() {
   var startTime = startElement.getAttribute("data-utcdatetime");
   var duration = parseInt(document.getElementById("duration").value);
   run_filter(startTime, duration);
+  get_currents();
   return;
 })
 $
@@ -674,7 +770,7 @@ var view = map.getView();
 $("#currents").on("click", function() {
   if (document.getElementById("currents").checked) {
     if (filterRun == true) {
-      get_currents();
+      if (currentData != null) {}
       render_arrows(true);
       view.on("change:resolution", debounced_render_arrows);
     }

@@ -22,8 +22,8 @@ import dateutil
 
 
 app = FastAPI(title="main-app")
-templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="./templates/static"), name="static")
+templates = Jinja2Templates(directory="templates/asb24")
+app.mount("/static", StaticFiles(directory="./templates/asb24"), name="static")
 
 origins = [
     "*"
@@ -47,7 +47,7 @@ def read_root(request: Request):
 
 @app.get("/static/{filename}")
 async def get_resource(filename):
-	filename = './templates/static/' + filename
+	filename = './templates/asb24/' + filename
 
 	if not os.path.isfile(filename):
 		return Response(status_code=404)
@@ -115,40 +115,53 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 
 @app.get('/opendap/{datetime}/{duration}')
 async def get_data(datetime, duration):
-	pre_url = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'
+	preURL = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'
 	fulldatetime = dateutil.parser.isoparse(datetime)
+	hourOffset = int(datetime[11:13])
+	minuteOffset = int(datetime[14:16])
+	if (minuteOffset > 0):
+		duration = int(duration) + 1
 	origdatetime = "2017-11-01T00:00:00Z"
 	fullorigdatetime = dateutil.parser.isoparse(origdatetime)
 	timeDiff = fulldatetime - fullorigdatetime
 	hourDiff = timeDiff.total_seconds() / 3600
 	trying = False
 	tryNum = 0
+	dataset = None
 	while ((not trying) and (tryNum < 5)):
 		try:
-			dataset = open_url(pre_url + str(fulldatetime.date() - timedelta(days=tryNum)) + "T00:00:00Z")
+			newURL = preURL + str(fulldatetime.date() - timedelta(days=tryNum)) + "T00:00:00Z" + "?"
+			newURL += "lon_rho[0:1:105][0:1:241],lat_rho[0:1:105][0:1:241],"
+			newURL += "time[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "],"
+			newURL += "ubar_eastward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241],"
+			newURL += "vbar_northward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241]"
+			print(newURL)
+			dataset = open_url(newURL)
 		except Exception as e:
 			print(e)
 			print("data unavailable for selected date/time")
 			tryNum += 1
 		else:
 			trying = True
-	if (dataset):
-		if (dataset['time'][:][-1].data < int(hourDiff) + int(duration)):
+	if (dataset):		
+		'''if (dataset['time'][:][-1].data < int(hourDiff) + int(duration)):
 			print("data unavailable for selected date/time")
-			return Response(status_code=200)
-		else:
-			timeIndex = 0
-			length = dataset['time'].shape[0]
-			timeCheck = int(hourDiff) + int(duration)
-			while ((int(dataset['time'][:][timeIndex].data) != timeCheck)) and (timeIndex < length):
-				timeIndex += 1
-			times = dataset['time'][timeIndex:int(timeIndex + int(duration))].data.tolist()
-			longs = dataset['lon_rho'][timeIndex:int(timeIndex + int(duration))].data.tolist()
-			lats = dataset['lat_rho'][timeIndex:int(timeIndex + int(duration))].data.tolist()
-			ubarEast = dataset['ubar_eastward'][timeIndex:int(timeIndex + int(duration))].data.tolist()
-			vbarNorth = dataset['vbar_northward'][timeIndex:int(timeIndex + int(duration))].data.tolist()
-			pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": ubarEast, "northward": vbarNorth})
-			return Response(content=pointsJSON, status_code=200)
+			return Response(status_code=200)'''
+		#timeIndex = 0
+		#length = dataset['time'].shape[0]
+		#timeCheck = int(hourDiff) + int(duration)
+		'''while ((int(dataset['time'][:][timeIndex].data) != timeCheck)) and (timeIndex < length):
+			timeIndex += 1'''
+		print(dataset['time'].shape)		 #CHECK IF THIS WORKS AT SOME POINT THAT ISN'T 4AM
+		print(dataset['time'][0:2])
+		print(dataset['time'][:].data)
+		times = dataset['time'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		longs = dataset['lon_rho'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		lats = dataset['lat_rho'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		ubarEast = dataset['ubar_eastward'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		vbarNorth = dataset['vbar_northward'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": ubarEast, "northward": vbarNorth})
+		return Response(content=pointsJSON, status_code=200)
 	else:
 		return Response(status_code=200)
 
