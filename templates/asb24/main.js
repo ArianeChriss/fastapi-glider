@@ -14,10 +14,9 @@ import Polyline from 'https://cdn.skypack.dev/ol/format/Polyline.js';
 import LineString from 'https://cdn.skypack.dev/ol/geom/LineString.js';
 import { fromLonLat } from 'https://cdn.skypack.dev/ol/proj';
 import GeoJSON from 'https://cdn.skypack.dev/ol/format/GeoJSON';
-import {useGeographic
-} from 'https://cdn.skypack.dev/ol/proj.js';
-import {Circle, Fill, Stroke, Style, Text, Icon
-} from 'https://cdn.skypack.dev/ol/style.js';
+import {useGeographic} from 'https://cdn.skypack.dev/ol/proj.js';
+import {Circle, Fill, Stroke, Style, Text, Icon} from 'https://cdn.skypack.dev/ol/style.js';
+//import currentArrow from './current.png';
 import Cluster from 'https://cdn.skypack.dev/ol/source/Cluster.js';
 import Overlay from 'https://cdn.skypack.dev/ol/Overlay.js';
 import Event from 'https://cdn.skypack.dev/ol/events/Event.js';
@@ -51,6 +50,28 @@ var typeValue = null;
 var currentData = null;
 var currentSource = null;
 var source = new VectorSource();
+const currentIcon = new Image();
+currentIcon.src = './static/icon.png'
+const iconStyle = {
+  'icon-src': './static/current.png',
+  'icon-width': 18,
+  'icon-height': 28,
+  'icon-color': 'black',
+  'icon-rotate-with-view': true,
+}
+function iconStyleFunction(feature, resolution) {
+  return new Style({
+    image: new Icon({
+      src: './current.png', // Path to your image file
+      size: [14, 14], // Size of the icon [width, height]
+      opacity: 0.5,
+      rotation: feature.get('rotation') || 0, // Rotation based on feature property
+      anchor: [0.5, 0.5], // Center of the icon
+      anchorXUnits: 'fraction',
+      anchorYUnits: 'fraction',
+    }),
+  });
+}
 const myDom = {
   points: {
     text: 'Normal',
@@ -608,9 +629,11 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
   for (var i = 1; i < numLayers; i++) {
     if (((layers.item(i).get('title') == "currents") && (filterRun == true)) && (visibility == true)) {
       layers.item(i).setVisible(true);
+      return;
     }
     else if (((layers.item(i).get('title') == "currents") && (filterRun == true)) && (visibility == false)) {
       layers.item(i).setVisible(false);
+      return;
     }
     else if ((layers.item(i).get('title') == "currents") && (filterRun == false)) {
       map.removeLayer(layers.item(i));
@@ -620,15 +643,16 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
   // code to actually show currents as vector field
   var timeslider = document.getElementById('timeRange');
   var data = JSON.parse(currentData.replace(/\bNaN\b/g, "null"));
-  currentSource = JSON.parse("{\"features\": []}");
-  for (var i = 0; i < data.time.length; i++) {
-    for (var j = 0; j < data.longs[i].length; j++) {
-      var tempLong = parseFloat(data.longs[i][j]);
-      var tempLat = parseFloat(data.lats[i][j]);
+  //currentSource = JSON.parse("{\"features\": []}");
+  var currentSource = [];
+  for (var i = 0; i < data.longs.length; i++) {
+    for (var j = 0; j < data.lats.length; j++) {
+      var tempLong = parseFloat(data.longs[i]);
+      var tempLat = parseFloat(data.lats[j]);
       if ((tempLong != NaN) && (tempLat != NaN)) {
-        var tempRotation = 90;
+        var tempRotation = 180;
         // don't forget to check for NaNs
-        currentSource.features[j] = {
+        /*currentSource.features[j] = {
           "type": "Feature",
           "geometry": {
             "type": "Point",
@@ -637,32 +661,47 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
           "properties": {
             "rotation": tempRotation
           }
-        }
+        }*/
+        var feature = new Feature({
+          geometry: new Point([tempLong, tempLat]),
+          properties: {
+            rotation: tempRotation
+          }
+        })
+        //console.log("long: "+tempLong.toString()+" lat: "+tempLat.toString());
+        //feature.setStyle(new Style(iconStyle));
+        //var coordsLast = [parseFloat(coords.slice(-1)[0][0]).toFixed(6), parseFloat(coords.slice(-1)[0][1]).toFixed(6)];
+        /*feature.setStyle(new Style({
+          image: new Icon({
+            anchor: [0.5, 46],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'pixels',
+            src: './static/current.png',
+          }),
+          rotation: tempRotation
+        }))*/
+        //console.log(feature.getStyle());
+        currentSource.push(feature);
       }
     }
   }
   var geoJsonFormat = new GeoJSON();
-  var geoJsonObject = geoJsonFormat.writeFeaturesObject(currentSource.features);
+  var geoJsonObject = geoJsonFormat.writeFeaturesObject(currentSource);
   var features = geoJsonFormat.readFeatures(geoJsonObject);
-  console.log(features);
+  var source = new VectorSource();
+  source.addFeatures(features);
   var pointsLayer = new WebGLPointsLayer({
-    source: new VectorSource({
-      features: features.map(feature => {
-        const point = feature.getGeometry();
-        const rotation = feature.get('rotation');
-
-        const iconStyle = new Style({
-          image: new Icon({
-            src: './static/current.png',
-            anchor: [0.5, 0.5],
-            rotateWithView: true,
-            rotation: rotation * Math.PI / 180,
-          }),
-        });
-        feature.setStyle(iconStyle);
-        return feature;
+    source: source,
+    style: iconStyle,
+    /*style: new Style({
+      image: new Icon({
+        src: './static/current.png',
+        size: 14,
+        color: 'rgb(255, 0, 0)',
+        opacity: 0.5,
       })
-    })
+    }),*/
+    title: "currents"
   })
   map.addLayer(pointsLayer);
   //var pointFeats = [];

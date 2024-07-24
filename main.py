@@ -16,8 +16,9 @@ from pprint import pprint
 import re
 from datetime import datetime, timedelta
 import csv
-import pydap.client
-from pydap.client import open_url
+#import pydap.client
+#from pydap.client import open_url
+from dapclient.client import open_url
 import dateutil
 
 
@@ -115,7 +116,7 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 
 @app.get('/opendap/{datetime}/{duration}')
 async def get_data(datetime, duration):
-	preURL = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'
+	preURL = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'		#potentially put the 'C' back in after dods???
 	fulldatetime = dateutil.parser.isoparse(datetime)
 	hourOffset = int(datetime[11:13])
 	minuteOffset = int(datetime[14:16])
@@ -126,15 +127,15 @@ async def get_data(datetime, duration):
 	timeDiff = fulldatetime - fullorigdatetime
 	hourDiff = timeDiff.total_seconds() / 3600
 	trying = False
-	tryNum = 0
+	tryNum = 0		# could maybe up this if there's never an immediate recent dataset
 	dataset = None
 	while ((not trying) and (tryNum < 5)):
 		try:
-			newURL = preURL + str(fulldatetime.date() - timedelta(days=tryNum)) + "T00:00:00Z" + "?"
-			newURL += "lon_rho[0:1:105][0:1:241],lat_rho[0:1:105][0:1:241],"
-			newURL += "time[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "],"
-			newURL += "ubar_eastward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241],"
-			newURL += "vbar_northward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241]"
+			newURL = preURL + str(fulldatetime.date() - timedelta(days=tryNum)) + "T00:00:00Z"# + "?"
+			#newURL += "lon_rho[0:1:105][0:1:241],lat_rho[0:1:105][0:1:241],"
+			#newURL += "time%5B" + str(hourOffset + (tryNum * 24)) + ":1:" + str(hourOffset + int(duration) + (tryNum * 24)) + "%5D,"
+			#newURL += "ubar_eastward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241],"
+			#newURL += "vbar_northward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241].nc"
 			print(newURL)
 			dataset = open_url(newURL)
 		except Exception as e:
@@ -152,14 +153,26 @@ async def get_data(datetime, duration):
 		#timeCheck = int(hourDiff) + int(duration)
 		'''while ((int(dataset['time'][:][timeIndex].data) != timeCheck)) and (timeIndex < length):
 			timeIndex += 1'''
-		print(dataset['time'].shape)		 #CHECK IF THIS WORKS AT SOME POINT THAT ISN'T 4AM
-		print(dataset['time'][0:2])
-		print(dataset['time'][:].data)
-		times = dataset['time'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		longs = dataset['lon_rho'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		lats = dataset['lat_rho'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		ubarEast = dataset['ubar_eastward'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		vbarNorth = dataset['vbar_northward'][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		#import requests
+		#r = requests.get(newURL, auth=('user', 'pass'))
+		#print(r.content)		 #CHECK IF THIS WORKS AT SOME POINT THAT ISN'T 4AM
+		#print(dataset.time[:-1].data)
+		#print(dataset['time'].map)
+		#for i in dataset['time'].iterdata():
+		#	times.append(i)
+		#print(times)
+		#print(dataset['time'][:234])
+		#print(dataset.keys())
+		#time = dataset['time']
+		#print(type(time))
+		#print(time.shape)
+		#print(time[:])
+		times = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		longs = dataset['lon_rho'][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		#print(longs)
+		lats = dataset['lat_rho'][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		ubarEast = dataset['ubar_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+		vbarNorth = dataset['vbar_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
 		pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": ubarEast, "northward": vbarNorth})
 		return Response(content=pointsJSON, status_code=200)
 	else:
