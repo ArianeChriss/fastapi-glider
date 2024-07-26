@@ -50,15 +50,48 @@ var typeValue = null;
 var currentData = null;
 var currentSource = null;
 var source = new VectorSource();
-const currentIcon = new Image();
-currentIcon.src = './static/icon.png'
-const iconStyle = {
+//const currentIcon = new Image();
+//currentIcon.src = './static/icon.png'*
+var iconStyle = {
   'icon-src': './static/current.png',
   'icon-width': 18,
   'icon-height': 28,
   'icon-color': 'black',
   'icon-rotate-with-view': true,
+  'icon-rotation': [
+    'interpolate',
+    ['linear'],
+    ['get', 'rotation'],
+    0,
+    0,
+    360,
+    6.28319]
 }
+function styleFunction(feature) {
+  //console.log(feature.get('rotation'));
+  var newStyle = iconStyle;
+  newStyle.rotation = Math.PI * parseFloat(feature.get('rotation')) / 180; //feature.get('rotation');
+  console.log(newStyle.rotation);
+  return newStyle;
+}
+/*const iconStyle = new Style({
+  image: new Icon({
+    src: './static/current.png',
+    anchor: [0.5, 0.5],  // Center of the icon
+    anchorXUnits: 'fraction',
+    anchorYUnits: 'fraction',
+    rotateWithView: true,  // Rotate the icon with the view
+    rotation: Math.PI * 45 / 180  // Initial rotation (optional)
+  })
+});*/
+
+// Style function that sets rotation dynamically based on feature property
+/*function styleFunction(feature) {
+  const rotation = feature.get('rotation');
+  iconStyle.getImage().setRotation(ol.math.toRadians(rotation));
+  return iconStyle;
+}*/
+
 function iconStyleFunction(feature, resolution) {
   return new Style({
     image: new Icon({
@@ -646,11 +679,27 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
   //currentSource = JSON.parse("{\"features\": []}");
   var currentSource = [];
   for (var i = 0; i < data.longs.length; i++) {
-    for (var j = 0; j < data.lats.length; j++) {
-      var tempLong = parseFloat(data.longs[i]);
-      var tempLat = parseFloat(data.lats[j]);
+    //console.log(i);
+    //console.log(data.longs[i]);
+    //console.log(typeof(data.longs[i]));
+    //console.log(data.l)
+    for (var j = 0; j < data.longs[i].length; j++) {
+      //console.log(i.toString() + "i " + j.toString() + " j");
+      var tempLong = parseFloat(data.longs[i][j]);
+      var tempLat = parseFloat(data.lats[i][j]);
+      //console.log("long string: "+data.longs[i][j].toString()+" lat string: "+data.lats[i][j].toString());
+      //console.log("long: "+tempLong.toString()+" lat: "+tempLat.toString());
       if ((tempLong != NaN) && (tempLat != NaN)) {
-        var tempRotation = 180;
+        console.log(data.eastward);
+        var east = parseFloat(data.eastward[time][i][j]);
+        var north = parseFloat(data.northward[time][i][j]);
+        if ((east != NaN) && (north != NaN)) {
+          var feature = new Feature({
+            geometry: new Point([tempLong, tempLat]),
+            rotation: 20,
+            strength: 0.7
+          })
+        }
         // don't forget to check for NaNs
         /*currentSource.features[j] = {
           "type": "Feature",
@@ -662,12 +711,7 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
             "rotation": tempRotation
           }
         }*/
-        var feature = new Feature({
-          geometry: new Point([tempLong, tempLat]),
-          properties: {
-            rotation: tempRotation
-          }
-        })
+        
         //console.log("long: "+tempLong.toString()+" lat: "+tempLat.toString());
         //feature.setStyle(new Style(iconStyle));
         //var coordsLast = [parseFloat(coords.slice(-1)[0][0]).toFixed(6), parseFloat(coords.slice(-1)[0][1]).toFixed(6)];
@@ -690,10 +734,12 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
   var features = geoJsonFormat.readFeatures(geoJsonObject);
   var source = new VectorSource();
   source.addFeatures(features);
+  //console.log(features[0].get('rotation'));
+  //console.log(features[0].getProperties('rotation'));
   var pointsLayer = new WebGLPointsLayer({
     source: source,
-    style: iconStyle,
-    /*style: new Style({
+    style: iconStyle, //styleFunction(feature),
+      /*style: new Style({
       image: new Icon({
         src: './static/current.png',
         size: 14,
