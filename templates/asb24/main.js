@@ -54,9 +54,16 @@ var source = new VectorSource();
 //currentIcon.src = './static/icon.png'*
 var iconStyle = {
   'icon-src': './static/current.png',
-  'icon-width': 18,
-  'icon-height': 28,
-  'icon-color': 'black',
+  'icon-width': 4,
+  'icon-height': 18,
+  'icon-color': [
+    'interpolate',
+    ['linear'],
+    ['get', 'strength'],
+    0,
+    '#000000',
+    1,
+    '#FFFFFF'],
   'icon-rotate-with-view': true,
   'icon-rotation': [
     'interpolate',
@@ -656,7 +663,7 @@ function get_currents() { // gets time and duration and sends to backend, then r
   //    - use a new vector layer with title of "currents"
 }
 
-function render_arrows(visibility, time) { // show retrieved current data as vector field
+function render_arrows(visibility) { // show retrieved current data as vector field
   var layers = map.getLayers(); // if filter has been run and layer is just invisible, toggles visibility
   var numLayers = layers.getLength();
   for (var i = 1; i < numLayers; i++) {
@@ -675,6 +682,7 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
   }
   // code to actually show currents as vector field
   var timeslider = document.getElementById('timeRange');
+  var time = parseInt(timeslider.value);
   var data = JSON.parse(currentData.replace(/\bNaN\b/g, "null"));
   //currentSource = JSON.parse("{\"features\": []}");
   var currentSource = [];
@@ -687,18 +695,56 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
       //console.log(i.toString() + "i " + j.toString() + " j");
       var tempLong = parseFloat(data.longs[i][j]);
       var tempLat = parseFloat(data.lats[i][j]);
+      var tempRotation = 0;
       //console.log("long string: "+data.longs[i][j].toString()+" lat string: "+data.lats[i][j].toString());
       //console.log("long: "+tempLong.toString()+" lat: "+tempLat.toString());
-      if ((tempLong != NaN) && (tempLat != NaN)) {
-        console.log(data.eastward);
+      if ((!(Number.isNaN(tempLong))) && (!(Number.isNaN(tempLat)))) {
         var east = parseFloat(data.eastward[time][i][j]);
         var north = parseFloat(data.northward[time][i][j]);
-        if ((east != NaN) && (north != NaN)) {
-          var feature = new Feature({
-            geometry: new Point([tempLong, tempLat]),
-            rotation: 20,
-            strength: 0.7
-          })
+        if ((!(Number.isNaN(east))) && (!(Number.isNaN(north)))) {
+          var magnitude = Math.sqrt((east**2)+(north**2));
+          if (magnitude != 0) {
+            if (east == 0) {
+              if (north > 0) {
+                tempRotation = 90;
+              }
+              else {
+                tempRotation = 270;
+              }
+            }
+            if (east > 0) {
+              if (north > 0) {
+                tempRotation = 180 * Math.atan(north/east) / Math.PI;
+              }
+              else if (north == 0)  {
+                tempRotation = 0;
+              }
+              else {
+                tempRotation = 360 - (180 * Math.atan(-1 * north / east) / Math.PI);
+              }
+            }
+            else {
+              if (north > 0) {
+                tempRotation = 180 - (180 * Math.atan(-1 * north / east) / Math.PI);
+              }
+              else if (north == 0) {
+                tempRotation = 180;
+              }
+              else {
+                tempRotation = 180 + (180 * Math.atan(north / east) / Math.PI);
+              }
+            }
+            if (!(Number.isNaN(parseFloat(tempRotation)))) {
+              //console.log("rotation: " + tempRotation.toString());
+              //console.log("magnitude: " + magnitude.toString());
+              var feature = new Feature({
+                geometry: new Point([tempLong, tempLat]),
+                rotation: tempRotation,
+                strength: magnitude
+              })
+              currentSource.push(feature);
+            }
+          }
         }
         // don't forget to check for NaNs
         /*currentSource.features[j] = {
@@ -725,7 +771,6 @@ function render_arrows(visibility, time) { // show retrieved current data as vec
           rotation: tempRotation
         }))*/
         //console.log(feature.getStyle());
-        currentSource.push(feature);
       }
     }
   }
