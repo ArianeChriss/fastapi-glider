@@ -20,7 +20,7 @@ import {Circle, Fill, Stroke, Style, Text, Icon} from 'https://cdn.skypack.dev/o
 import Cluster from 'https://cdn.skypack.dev/ol/source/Cluster.js';
 import Overlay from 'https://cdn.skypack.dev/ol/Overlay.js';
 import Event from 'https://cdn.skypack.dev/ol/events/Event.js';
-import debounce from 'https://cdn.jsdelivr.net/npm/lodash@4.17.21/+esm';
+import _ from 'https://cdn.jsdelivr.net/npm/lodash@4.17.21/+esm';
 import numjs from 'https://cdn.jsdelivr.net/npm/numjs@0.16.1/+esm';
 //import debounce from lodash;
 /*var projectName = require("@scope/lodash")*/
@@ -50,20 +50,28 @@ var typeValue = null;
 var currentData = null;
 var currentSource = null;
 var source = new VectorSource();
-//const currentIcon = new Image();
-//currentIcon.src = './static/icon.png'*
 var iconStyle = {
   'icon-src': './static/current.png',
-  'icon-width': 4,
+  'icon-width': 7,
   'icon-height': 18,
   'icon-color': [
     'interpolate',
     ['linear'],
     ['get', 'strength'],
     0,
-    '#000000',
+    '#44ce1b',
+    0.25,
+    '#bbdb44',
+    0.5,
+    '#f7e379',
+    0.75,
+    '#f2a134',
     1,
-    '#FFFFFF'],
+    '#e51f1f',
+    1.25,
+    '#e51fe2',
+    1.5,
+    "#aa1fe5"],
   'icon-rotate-with-view': true,
   'icon-rotation': [
     'interpolate',
@@ -73,62 +81,6 @@ var iconStyle = {
     0,
     360,
     6.28319]
-}
-function styleFunction(feature) {
-  //console.log(feature.get('rotation'));
-  var newStyle = iconStyle;
-  newStyle.rotation = Math.PI * parseFloat(feature.get('rotation')) / 180; //feature.get('rotation');
-  console.log(newStyle.rotation);
-  return newStyle;
-}
-/*const iconStyle = new Style({
-  image: new Icon({
-    src: './static/current.png',
-    anchor: [0.5, 0.5],  // Center of the icon
-    anchorXUnits: 'fraction',
-    anchorYUnits: 'fraction',
-    rotateWithView: true,  // Rotate the icon with the view
-    rotation: Math.PI * 45 / 180  // Initial rotation (optional)
-  })
-});*/
-
-// Style function that sets rotation dynamically based on feature property
-/*function styleFunction(feature) {
-  const rotation = feature.get('rotation');
-  iconStyle.getImage().setRotation(ol.math.toRadians(rotation));
-  return iconStyle;
-}*/
-
-function iconStyleFunction(feature, resolution) {
-  return new Style({
-    image: new Icon({
-      src: './current.png', // Path to your image file
-      size: [14, 14], // Size of the icon [width, height]
-      opacity: 0.5,
-      rotation: feature.get('rotation') || 0, // Rotation based on feature property
-      anchor: [0.5, 0.5], // Center of the icon
-      anchorXUnits: 'fraction',
-      anchorYUnits: 'fraction',
-    }),
-  });
-}
-const myDom = {
-  points: {
-    text: 'Normal',
-    align: 'Left',
-    baseline: 'Bottom',
-    rotation: 0,
-    font: 'Open Sans',
-    weight: 'Normal',
-    size: '16px',
-    height: 1,
-    offsetX: 2,
-    offsetY: 2,
-    color: '#111111',
-    outline: '#ffffff',
-    outlineWidth: 3,
-    maxreso: 1200
-  },
 }
 
 const overlay = new Overlay({
@@ -146,71 +98,12 @@ class ArrowGeometry extends LineString {
   }
 }
 
-const openSans = document.createElement('link');
+/*const openSans = document.createElement('link');
 openSans.href = 'https: //fonts.googleapis.com/css?family=Open+Sans';
 openSans.rel = 'stylesheet';
-document.head.appendChild(openSans);
+document.head.appendChild(openSans);*/
 //var mapLayers = [];
 
-const getText = function (feature, resolution, dom) {
-  const type = dom.text.value;
-  const maxResolution = dom.maxreso.value;
-  let text = feature.get('name');
-
-  if (resolution > maxResolution) {
-    text = '';
-  } else if (type == 'hide') {
-    text = '';
-  } else if (type == 'shorten') {
-    text = text.trunc(12);
-  } else if (
-    type == 'wrap' &&
-    (!dom.placement || dom.placement.value != 'line')
-  ) {
-    text = stringDivider(text,
-    16, '\n');
-  }
-
-  return text;
-};
-
-const createTextStyle = function (feature, resolution, dom) {
-  const align = dom.align.value;
-  const baseline = dom.baseline.value;
-  const size = dom.size.value;
-  const height = dom.height.value;
-  const offsetX = parseInt(dom.offsetX.value,
-  10);
-  const offsetY = parseInt(dom.offsetY.value,
-  10);
-  const weight = dom.weight.value;
-  const placement = dom.placement ? dom.placement.value : undefined;
-  const maxAngle = dom.maxangle ? parseFloat(dom.maxangle.value) : undefined;
-  const overflow = dom.overflow ? dom.overflow.value == 'true' : undefined;
-  const rotation = parseFloat(dom.rotation.value);
-  const font = weight + ' ' + size + '/' + height + ' ' + dom.font.value;
-  const fillColor = dom.color.value;
-  const outlineColor = dom.outline.value;
-  const outlineWidth = parseInt(dom.outlineWidth.value,
-  10);
-
-  return new Text({
-    textAlign: align == '' ? undefined : align,
-    textBaseline: baseline,
-    font: font,
-    text: getText(feature, resolution, dom),
-    fill: new Fill({color: fillColor
-    }),
-    stroke: new Stroke({color: outlineColor, width: outlineWidth
-    }),
-    offsetX: offsetX,
-    offsetY: offsetY,
-    placement: placement,
-    maxAngle: maxAngle,
-    overflow: overflow,
-    rotation: rotation,
-  });
-};
 /*
 // Get the needle image element
 const needle = document.getElementById('needle');
@@ -335,20 +228,6 @@ document.addEventListener('mousemove', function(event) {
 document.addEventListener('mouseup', function() {
   isDragging = false;
 });
-
-
-
-function pointStyleFunction(feature, resolution) {
-  return new Style({
-    image: new Circle({
-      radius: 8,
-      fill: new Fill({color: 'rgba(255,0,0,0.1)'}),
-      stroke: new Stroke({color: 'red', width: 1
-      }),
-    }),
-    text: createTextStyle(feature, resolution, myDom.points),
-  });
-}
 
 const map = new Map({
   target: 'map',
@@ -612,6 +491,14 @@ function upload_data() {
 
 function run_filter(datetime, duration) {
   filterRun = true;
+  /*
+  var options = document.getElementById("tickmarks");
+  for (var i = 0; i < duration; i++) {
+    var newTime = document.createElement("option");
+    newTime.value = i;
+    newTime.label = i;
+    options.appendChild(newTime);
+  }*/
 }
 
 function get_currents() { // gets time and duration and sends to backend, then renders data to map
@@ -663,44 +550,51 @@ function get_currents() { // gets time and duration and sends to backend, then r
   //    - use a new vector layer with title of "currents"
 }
 
-function render_arrows(visibility) { // show retrieved current data as vector field
+function render_arrows() { // show retrieved current data as vector field
   var layers = map.getLayers(); // if filter has been run and layer is just invisible, toggles visibility
   var numLayers = layers.getLength();
+  var timeslider = document.getElementById('timeRange');
+  var time = parseInt(timeslider.value);
   for (var i = 1; i < numLayers; i++) {
-    if (((layers.item(i).get('title') == "currents") && (filterRun == true)) && (visibility == true)) {
-      layers.item(i).setVisible(true);
-      return;
-    }
-    else if (((layers.item(i).get('title') == "currents") && (filterRun == true)) && (visibility == false)) {
-      layers.item(i).setVisible(false);
-      return;
+    if (((layers.item(i).get('title') == "currents") && (filterRun == true))) {
+      if (layers.item(i).getVisible == false) {
+        if (parseInt(layers.item(i).get('timeData')) == time) {
+          layers.item(i).setVisible(true);
+          update_layers();
+          return;
+        }
+        else {
+          map.removeLayer(layers.item(i));
+          update_layers();
+          break;
+        }
+      }
+      else if (parseInt(layers.item(i).get('timeData')) == time) {
+        layers.item(i).setVisible(false);
+        update_layers();
+        return;
+      }
+      else if (parseInt(layers.item(i).get('timeData')) != time) {
+        map.removeLayer(layers.item(i));
+        update_layers();
+      }
     }
     else if ((layers.item(i).get('title') == "currents") && (filterRun == false)) {
       map.removeLayer(layers.item(i));
-      break;
+      update_layers();
+      return;
     }
   }
-  // code to actually show currents as vector field
-  var timeslider = document.getElementById('timeRange');
-  var time = parseInt(timeslider.value);
   var data = JSON.parse(currentData.replace(/\bNaN\b/g, "null"));
-  //currentSource = JSON.parse("{\"features\": []}");
   var currentSource = [];
   for (var i = 0; i < data.longs.length; i++) {
-    //console.log(i);
-    //console.log(data.longs[i]);
-    //console.log(typeof(data.longs[i]));
-    //console.log(data.l)
     for (var j = 0; j < data.longs[i].length; j++) {
-      //console.log(i.toString() + "i " + j.toString() + " j");
       var tempLong = parseFloat(data.longs[i][j]);
       var tempLat = parseFloat(data.lats[i][j]);
       var tempRotation = 0;
-      //console.log("long string: "+data.longs[i][j].toString()+" lat string: "+data.lats[i][j].toString());
-      //console.log("long: "+tempLong.toString()+" lat: "+tempLat.toString());
       if ((!(Number.isNaN(tempLong))) && (!(Number.isNaN(tempLat)))) {
-        var east = parseFloat(data.eastward[time][i][j]);
-        var north = parseFloat(data.northward[time][i][j]);
+        var east = parseFloat(data.eastward[time][i][j]);                 // APPARENTLY THIS HAS A PROBLEM, ERROR THROWN WHEN 3O ENTERED AS DURATION
+        var north = parseFloat(data.northward[time][i][j]);               // COULD BE BEYOND SCOPE OF SINGLE FILE TIME RANGE
         if ((!(Number.isNaN(east))) && (!(Number.isNaN(north)))) {
           var magnitude = Math.sqrt((east**2)+(north**2));
           if (magnitude != 0) {
@@ -746,31 +640,6 @@ function render_arrows(visibility) { // show retrieved current data as vector fi
             }
           }
         }
-        // don't forget to check for NaNs
-        /*currentSource.features[j] = {
-          "type": "Feature",
-          "geometry": {
-            "type": "Point",
-            "coordinates": [tempLong, tempLat],
-          },
-          "properties": {
-            "rotation": tempRotation
-          }
-        }*/
-        
-        //console.log("long: "+tempLong.toString()+" lat: "+tempLat.toString());
-        //feature.setStyle(new Style(iconStyle));
-        //var coordsLast = [parseFloat(coords.slice(-1)[0][0]).toFixed(6), parseFloat(coords.slice(-1)[0][1]).toFixed(6)];
-        /*feature.setStyle(new Style({
-          image: new Icon({
-            anchor: [0.5, 46],
-            anchorXUnits: 'fraction',
-            anchorYUnits: 'pixels',
-            src: './static/current.png',
-          }),
-          rotation: tempRotation
-        }))*/
-        //console.log(feature.getStyle());
       }
     }
   }
@@ -779,27 +648,17 @@ function render_arrows(visibility) { // show retrieved current data as vector fi
   var features = geoJsonFormat.readFeatures(geoJsonObject);
   var source = new VectorSource();
   source.addFeatures(features);
-  //console.log(features[0].get('rotation'));
-  //console.log(features[0].getProperties('rotation'));
   var pointsLayer = new WebGLPointsLayer({
     source: source,
-    style: iconStyle, //styleFunction(feature),
-      /*style: new Style({
-      image: new Icon({
-        src: './static/current.png',
-        size: 14,
-        color: 'rgb(255, 0, 0)',
-        opacity: 0.5,
-      })
-    }),*/
-    title: "currents"
+    style: iconStyle,
+    title: "currents",
+    timeData: time
   })
   map.addLayer(pointsLayer);
-  //var pointFeats = [];
-  //console.log(points);
+  update_layers();
   return;
 }
-const debounced_render_arrows = debounce(render_arrows, 300); // gives a bit of a respite to the map renderer via delay after update, time can probably be increased
+let debounced_render_arrows = _.debounce(render_arrows, 300); // gives a bit of a respite to the map renderer via delay after update, time can probably be increased
 
 function update_layers() { // updates the dropdown list of layers with the layers rendered in the map
   var layers = map.getLayers(); // needs to be called whenever a new layer is added to the map
@@ -839,12 +698,7 @@ function change_utc() { // switches formatting and time of datetime element to U
     const day = String(now.getDate()).padStart(2, '0');
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    const localString = `${year
-    }-${month
-    }-${day
-    }T${hours
-    }:${minutes
-    }`;
+    const localString = `${year}-${month}-${day}T${hours}:${minutes}`;
     start.value = localString;
     start.setAttribute("data-utcdatetime",  now.toISOString());
   }
@@ -854,9 +708,7 @@ function change_utc() { // switches formatting and time of datetime element to U
 function user_datechange() { // switched the later-accessed data-utcdatetime data storage in the datetime-local html element
   var start = document.getElementById("startDateTime");
   var utcSwitch = document.getElementById("UTC");
-  if (utcSwitch.value == true) {
-    start.setAttribute("data-utcdatetime", new Date(start.value).toISOString());
-  }
+  start.setAttribute("data-utcdatetime", new Date(start.value).toISOString());
   filterRun = false;
 }
 
@@ -901,15 +753,23 @@ $("#currents").on("click", function() {
   if (document.getElementById("currents").checked) {
     if (filterRun == true) {
       if (currentData != null) {}
-      render_arrows(true);
-      view.on("change:resolution", debounced_render_arrows);
+      debounced_render_arrows();
+      //view.on("change:resolution", debounced_render_arrows);
     }
   }
   else {
+    debounced_render_arrows();
+  }
+  /*else {
     view.un("change:resolution", debounced_render_arrows);
     render_arrows(false);
-  }
+  }*/
 });
+$("#timeRange").on("change", function() {                         // figure out why this isn't working 7-29-24
+  if (document.getElementById("currents").checked) {
+    debounced_render_arrows();
+  }
+})
 infoCloser.addEventListener("click", function() {
   overlay.setPosition(undefined);
   infoCloser.blur();
