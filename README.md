@@ -34,3 +34,36 @@ When the server starts, open a browser and go to the listed IP address.
 ### Running the model
 
 ### Editing the source code
+For contributing to this project, fork the repository and create a pull request with any changes.
+
+### TODOS:
+
+Python:
+- model and response function
+- filter and response function
+- adapt for all known .csv variable naming formats (Rutgers, University of Delaware, etc.)
+- save model weights to external file for future use
+- add try/except blocks for error checking for bad time range in case of different time coverage files, possibly try going back another day
+- separate out csv reader (to be replaced with pandas) and current checking into external functions
+- add comments/documentation
+- separate out any parts that could require future modification
+
+Javascript:
+- save out layer to .kml file
+- fix current display switch not working beyond first trigger
+- add loading cursor/grey out clickable components while waiting for response
+- change datalist element to be just a timerange element selection readout
+- add success/failure messages
+- add map legends for path colors and possibly current strengths
+- allow reordering layers
+- add comments/documentation
+- add favicon (optional, but cooler)
+
+Other:
+- figure out filter running GUI structure
+  - fetch model weight file list (maybe preload into interface, refreshing when new file is saved?)
+  - allow selection of any model weight file before filter run
+- look into remote hosting or deploying to single script activation
+  - activate python environment
+  - run main.py
+  - open browser to IP address
