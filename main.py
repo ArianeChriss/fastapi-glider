@@ -122,7 +122,7 @@ async def filtering(datetime, duration):
 
 @app.get('/opendap/{datetime}/{duration}')
 async def get_data(datetime, duration):
-	preURL = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'		#potentially put the 'C' back in after dods???
+	preURL = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'
 	fulldatetime = dateutil.parser.isoparse(datetime)
 	hourOffset = int(datetime[11:13])
 	minuteOffset = int(datetime[14:16])
