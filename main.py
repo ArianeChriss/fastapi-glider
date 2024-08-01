@@ -20,6 +20,7 @@ import csv
 #from pydap.client import open_url
 from dapclient.client import open_url
 import dateutil
+from filter import run_filter
 
 
 app = FastAPI(title="main-app")
@@ -113,6 +114,11 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 		except Exception as e:
 			print(e)
 			print("file upload failed")
+
+@app.get('/filter/{datetime}/{duration}')
+async def filtering(datetime, duration):
+	particlesJSON = run_filter(datetime, duration)
+	return Response(content=particlesJSON, status_code=200)
 
 @app.get('/opendap/{datetime}/{duration}')
 async def get_data(datetime, duration):
