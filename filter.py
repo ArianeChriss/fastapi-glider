@@ -1,5 +1,11 @@
+import json
+
 def run_filter(datetime, duration):
-    return
+    pointLongs = [-73.899,-73.190,-72.656]
+    pointLats = [39.086,39.318,39.846]
+    times = [0,1,2]
+    pointJSON = json.dumps({"time": times, "longs": pointLongs, "lats": pointLats})
+    return pointJSON
 
 """
 Author: Adnan Abdullah

@@ -490,7 +490,31 @@ function upload_data() {
 }*/
 
 function run_filter(datetime, duration) {
-  filterRun = true;
+  filterRun = true;/*
+  var datetime = document.getElementById("startDateTime").getAttribute("data-utcdatetime");
+  if (datetime == "") {
+    display_error("Please select a start time");
+    console.log("Please select a start time");
+    return;
+  }
+  var duration = parseInt(document.getElementById("duration").value);
+  if (duration == NaN) {
+    display_error("Please enter an integer duration");
+    console.log("Please enter an integer duration");
+    return;
+  }
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      filterData = xhttp.responseText;
+      var timeslider = document.getElementById('timeRange');
+      timeslider.setAttribute("max", duration);   // okay yes this should happen here but i don't feel like breaking this tonight
+      filterRun = true;
+    }
+  }
+  xhttp.open("GET",
+  "/filter/"+datetime+"/"+duration, true);
+  xhttp.send();*/
   /*
   var options = document.getElementById("tickmarks");
   for (var i = 0; i < duration; i++) {
