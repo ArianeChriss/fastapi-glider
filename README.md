@@ -60,6 +60,7 @@ Javascript:
 - add favicon (optional, but cooler)
 
 Other:
+- make dataflow diagram
 - figure out filter running GUI structure
   - fetch model weight file list (maybe preload into interface, refreshing when new file is saved?)
   - allow selection of any model weight file before filter run
