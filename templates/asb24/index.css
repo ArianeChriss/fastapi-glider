@@ -169,8 +169,8 @@ input[type=checkbox] {
 }
 
 .compass {
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   background-image: url('compass_background.jpg');
   background-size: cover;
   position: relative;
@@ -180,8 +180,8 @@ input[type=checkbox] {
 }
 
 .needle {
-  width: 50px;
-  height: 150px;
+  width: 40px;
+  height: 120x;
   position: absolute;
   top: 50%;
   left: 50%;
