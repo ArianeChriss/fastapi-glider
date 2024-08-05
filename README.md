@@ -40,6 +40,7 @@ For contributing to this project, fork the repository and create a pull request 
 
 Python:
 - model and response function
+- function to check if model weight files folder exists, if not make it
 - filter and response function
 - adapt for all known .csv variable naming formats (Rutgers, University of Delaware, etc.)
 - save model weights to external file for future use
@@ -49,6 +50,7 @@ Python:
 - separate out any parts that could require future modification
 
 Javascript:
+- allow selection of any model weight file before filter run
 - save out layer to .kml file
 - fix current display switch not working beyond first trigger
 - add loading cursor/grey out clickable components while waiting for response
@@ -64,8 +66,7 @@ Other:
 - figure out filter running GUI structure
   - fetch model weight file list (maybe preload into interface, refreshing when new file is saved?)
   - allow selection of any model weight file before filter run
-      - add function to check if model weight files folder exists, if not make it
-      - add model weight files folder to .gitignore so users don't automatically download others' models
+  - add model weight files folder to .gitignore so users don't automatically download others' models
 - look into remote hosting or deploying to single script activation
   - activate python environment
   - run main.py
