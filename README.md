@@ -64,6 +64,8 @@ Other:
 - figure out filter running GUI structure
   - fetch model weight file list (maybe preload into interface, refreshing when new file is saved?)
   - allow selection of any model weight file before filter run
+      - add function to check if model weight files folder exists, if not make it
+      - add model weight files folder to .gitignore so users don't automatically download others' models
 - look into remote hosting or deploying to single script activation
   - activate python environment
   - run main.py
