@@ -18,7 +18,9 @@ pip install pykml==0.2.0
 pip install dapclient==1.0.5
 pip install python-dateutil==2.9.0.post0
 ```
-Clone or download this repository, navigate to the local repo directory and run the main.py file using:
+Clone or download this repository, navigate to the local repo directory. Until automatic folder generation is implemented, manually create a folder named "model_weights" inside the directory.
+
+Run the main.py file using:
 ```
 cd /YOUR/PATH/fastapi-glider
 python main.py
