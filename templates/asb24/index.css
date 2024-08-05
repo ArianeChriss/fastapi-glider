@@ -49,12 +49,17 @@ body {
 }
 
 input[type=text] {
-  padding: 5px;
-  width: 400px;
+  /*padding: 5px;
+  width: 400px;*/
 }
 
 input {
   float: right;
+}
+
+input[type=checkbox] {
+  float: left !important;
+  vertical-align: bottom;
 }
 
 .wrapper {

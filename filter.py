@@ -1,6 +1,6 @@
 import json
 
-def run_filter(datetime, duration):
+def run_filter(startLong, startLat, datetime, duration):
     pointLongs = [-73.899,-73.190,-72.656]
     pointLats = [39.086,39.318,39.846]
     times = [0,1,2]
