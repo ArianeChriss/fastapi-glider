@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 import uvicorn
 import os
 from pykml import parser
-import aiofiles
+#import aiofiles
 import base64
 import sys
 from io import StringIO
