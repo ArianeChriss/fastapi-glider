@@ -1,8 +1,8 @@
 import json
 
-def run_filter(startLong, startLat, datetime, duration):
-    pointLongs = [-73.899,-73.190,-72.656]
-    pointLats = [39.086,39.318,39.846]
+def run_filter(datetime, duration, startLong, startLat, desLong, desLat):
+    pointLongs = [[-73.899,-73.190,-72.656], [-73.899,-73.190,-72.656], [-73.899,-73.190,-72.626]]
+    pointLats = [[39.061,39.318,39.816], [38.086,39.180,39.846], [39.086,39.318,39.842]]
     times = [0,1,2]
     pointJSON = json.dumps({"time": times, "longs": pointLongs, "lats": pointLats})
     return pointJSON
