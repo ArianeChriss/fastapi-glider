@@ -20,7 +20,8 @@ import csv
 #from pydap.client import open_url
 from dapclient.client import open_url
 import dateutil
-from filter import run_filter
+#from filter import run_filter
+from Adnan_Filter_New import run_filter
 
 
 app = FastAPI(title="main-app")
@@ -115,10 +116,28 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 			print(e)
 			print("file upload failed")
 
-@app.get('/filter/{datetime}/{duration}')
-async def filtering(datetime, duration):
-	particlesJSON = run_filter(datetime, duration)
+@app.get('/filter/{datetime}/{duration}/{startlong}/{startlat}')
+async def filtering(datetime, duration, startlong, startlat):
+	particlesJSON = run_filter(datetime, duration, startlong, startlat, 0, 0)
 	return Response(content=particlesJSON, status_code=200)
+
+@app.get('/newfile/{url}')
+async def fetch_file(url):
+	try:
+		dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(url))
+	except Exception as e:
+		print(e)
+		print("error opening file")
+	if (dataset):
+		seq = dataset[('s')]
+		lats = seq[('time')]
+		print(lats)
+		#print(seq)
+		#print(seq.time.iterdata())
+		all = seq[('time', 'latitude', 'longitude', 'c_wpt_lat', 'c_wpt_lon')]['time'][:].iterdata()
+		#print(all)
+		#lats = dataset['s']
+		#print(lats)
 
 @app.get('/opendap/{datetime}/{duration}')
 async def get_data(datetime, duration):
@@ -133,15 +152,11 @@ async def get_data(datetime, duration):
 	timeDiff = fulldatetime - fullorigdatetime
 	hourDiff = timeDiff.total_seconds() / 3600
 	trying = False
-	tryNum = 0		# could maybe up this if there's never an immediate recent dataset
+	tryNum = 0
 	dataset = None
 	while ((not trying) and (tryNum < 5)):
 		try:
 			newURL = preURL + str(fulldatetime.date() - timedelta(days=tryNum)) + "T00:00:00Z"# + "?"
-			#newURL += "lon_rho[0:1:105][0:1:241],lat_rho[0:1:105][0:1:241],"
-			#newURL += "time%5B" + str(hourOffset + (tryNum * 24)) + ":1:" + str(hourOffset + int(duration) + (tryNum * 24)) + "%5D,"
-			#newURL += "ubar_eastward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241],"
-			#newURL += "vbar_northward[" + str(hourOffset) + ":1:" + str(hourOffset + int(duration)) + "][0:1:105][0:1:241].nc"
 			print(newURL)
 			dataset = open_url(newURL)
 		except Exception as e:
@@ -150,35 +165,12 @@ async def get_data(datetime, duration):
 			tryNum += 1
 		else:
 			trying = True
-	if (dataset):		
-		'''if (dataset['time'][:][-1].data < int(hourDiff) + int(duration)):
-			print("data unavailable for selected date/time")
-			return Response(status_code=200)'''
-		#timeIndex = 0
-		#length = dataset['time'].shape[0]
-		#timeCheck = int(hourDiff) + int(duration)
-		'''while ((int(dataset['time'][:][timeIndex].data) != timeCheck)) and (timeIndex < length):
-			timeIndex += 1'''
-		#import requests
-		#r = requests.get(newURL, auth=('user', 'pass'))
-		#print(r.content)		 #CHECK IF THIS WORKS AT SOME POINT THAT ISN'T 4AM
-		#print(dataset.time[:-1].data)
-		#print(dataset['time'].map)
-		#for i in dataset['time'].iterdata():
-		#	times.append(i)
-		#print(times)
-		#print(dataset['time'][:234])
-		#print(dataset.keys())
-		#time = dataset['time']
-		#print(type(time))
-		#print(time.shape)
-		#print(time[:])
-		times = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		longs = dataset['lon_rho'][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		#print(longs)
-		lats = dataset['lat_rho'][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		ubarEast = dataset['ubar_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
-		vbarNorth = dataset['vbar_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()#[timeIndex:int(timeIndex + int(duration))].data.tolist()
+	if (dataset):
+		times = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()
+		longs = dataset['lon_rho'][:][:].data.tolist()
+		lats = dataset['lat_rho'][:][:].data.tolist()
+		ubarEast = dataset['ubar_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
+		vbarNorth = dataset['vbar_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
 		pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": ubarEast, "northward": vbarNorth})
 		return Response(content=pointsJSON, status_code=200)
 	else:
