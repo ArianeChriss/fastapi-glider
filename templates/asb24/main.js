@@ -206,7 +206,7 @@ function fetch_data(url) {
   xhttp.send();
 }
 
-function run_filter(datetime, duration, dataID, wptLong, wptLat, name, color) {
+function run_filter(datetime, duration, dirNum, dataID, wptLong, wptLat, name, color) {
   filterRun = true;
   if (dataID == undefined) {
     display_error("Please enter a dataset ID");
@@ -234,7 +234,12 @@ function run_filter(datetime, duration, dataID, wptLong, wptLat, name, color) {
       filterRun = true;
     }
   }
-  xhttp.open("GET","/filter/"+datetime+"/"+duration+"/"+dataID+"/"+wptLong+"/"+wptLat, true);
+  if (dirNum == 1) {
+    xhttp.open("GET","/filter/onedir/"+datetime+"/"+duration+"/"+dataID+"/"+String(38)+"/"+String(-74), true);
+  }
+  else {
+    xhttp.open("GET","/filter/eightdir/"+datetime+"/"+duration+"/"+dataID+"/"+wptLong+"/"+wptLat, true);
+  }
   xhttp.send();
   /*
   var options = document.getElementById("tickmarks");
@@ -333,19 +338,25 @@ function render_particles(name, color) {
   var time = parseInt(timeslider.value);
   var data = JSON.parse(filterData.replace(/\bNaN\b/g, "null"));
   var filterSource = [];
-  for (var i = 0; i < data.longs[time].length; i++) {
-    var tempLong = data.longs[time][i];
-    var tempLat = data.lats[time][i];
-    console.log(tempLong);
-    console.log(tempLat);
-    var feature = new Feature({
-      geometry: new Point([tempLong, tempLat]),
-      red: parseInt(color.slice(1,3), 16),
-      green: parseInt(color.slice(3,5), 16),
-      blue: parseInt(color.slice(5,7), 16),
-    })
-    filterSource.push(feature);
+  console.log(data);
+  console.log(data.time.length);
+  console.log(data.longs);
+  for (var i = 0; i < data.time.length; i++) {
+    for (var j = 0; j < data.longs[i].length; j++) {
+      var tempLong = data.longs[i][j];
+      var tempLat = data.lats[i][j];
+      //console.log(tempLong);
+      //console.log(tempLat);
+      var feature = new Feature({
+        geometry: new Point([tempLong, tempLat]),
+        red: parseInt(color.slice(1,3), 16),
+        green: parseInt(color.slice(3,5), 16),
+        blue: parseInt(color.slice(5,7), 16),
+      })
+      filterSource.push(feature);
+    }
   }
+  console.log("hello");
   var geoJsonFormat = new GeoJSON();
   var geoJsonObject = geoJsonFormat.writeFeaturesObject(filterSource);
   var features = geoJsonFormat.readFeatures(geoJsonObject);
@@ -568,14 +579,14 @@ $("#startDateTime").on("change", user_datechange);
 // run model w/filter
 // return filter results to frontend
 // display filter results
-$("#run").on("click", function() {
+$("#runOne").on("click", function() {
   var startElement = document.getElementById("startDateTime");
   var startTime = startElement.getAttribute("data-utcdatetime");
   var duration = parseInt(document.getElementById("duration").value);
   const name = document.getElementById("runName").value;
   const color = document.getElementById("color").value;
   const dataID = document.getElementById("dataURL").value;
-  run_filter(startTime, duration, dataID, wptLong, wptLat, name, color);
+  run_filter(startTime, duration, 1, dataID, wptLong, wptLat, name, color);
   get_currents();
   return;
 })

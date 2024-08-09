@@ -3,7 +3,7 @@ import numpy as np
 import math
 import json
 import sys
-#sys.path.append(r"C:/Users/arian/Documents/Github/fastapi-glider/filter/read_current.py")
+sys.path.append(r"C:/Users/arian/Documents/GitHub/fastapi-glider/read_current.py")
 from read_current import get_closest_current
 
 initial_position = [-73.5007, 38.42143]
@@ -26,7 +26,7 @@ def resample(particles, weights):
     indices = np.random.choice(len(particles), len(particles), p=weights)
     return particles[indices]
 
-def convert_to_meters(initial_position, commanded_position, after_2Hour, avg_speed, travel_time, number_of_samples):
+def convert_to_meters(initial_position, commanded_position):
     diff_in_lon = commanded_position[0] - initial_position[0]
     diff_in_lat = commanded_position[1] - initial_position[1]
     angle_of_distance = math.atan2(diff_in_lat, diff_in_lon)
@@ -57,31 +57,13 @@ def convert_to_meters(initial_position, commanded_position, after_2Hour, avg_spe
     
     return resampled_particles
 
-'''def run_filter(datetime, duration, startLong, startLat, desLong, desLat):
+def run_filter(datetime, duration, startLong, startLat, desLong, desLat):
     times=[0]
     pointJSON = json.dumps({"time": times, "longs": pointLongs.tolist(), "lats": pointLats.tolist()})
-    return pointJSON'''
+    return pointJSON
 
-def run_filter(datetime, duration, dataID, desLong, desLat):
-    initial_position = [-73.5007, 38.42143]
-    commanded_position = [-74.00, 39.1669]
-    after_2Hour = [-73.5086, 38.43054]
-    avg_speed = 0.29  # in m/s
-    travel_time = 7200  # 2 hours in seconds
-    number_of_samples = 200
-    times = [0, 1]
-    longs = []
-    lats = []
-    longs.append([initial_position[0]])
-    lats.append([initial_position[1]])
-    resampled_positions = convert_to_meters(initial_position, commanded_position, after_2Hour, avg_speed, travel_time, number_of_samples)
-    longs = [[initial_position[0]], resampled_positions[:,0].tolist()]
-    lats = [[initial_position[1]], resampled_positions[:,1].tolist()]
-    pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats})
-    return pointsJSON
-
-'''def plot_positions(initial_position, commanded_position):
-    resampled_positions = convert_to_meters(initial_position, commanded_position, after_2Hour, avg_speed, travel_time, number_of_samples)
+def plot_positions(initial_position, commanded_position):
+    resampled_positions = convert_to_meters(initial_position, commanded_position)
 
     # Extract longitudes and latitudes from resampled positions
     global pointLongs
@@ -102,4 +84,4 @@ def run_filter(datetime, duration, dataID, desLong, desLat):
     plt.show()
     return(run_filter(None, None, initial_position[0], initial_position[1], commanded_position[0], commanded_position[1]))
 
-plot_positions(initial_position, commanded_position)'''
+plot_positions(initial_position, commanded_position)
