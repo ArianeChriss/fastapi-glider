@@ -20,6 +20,8 @@ import csv
 #from pydap.client import open_url
 from dapclient.client import open_url
 import dateutil
+import math
+import numpy as np
 #from filter import run_filter
 from Adnan_Filter_New import run_filter
 
@@ -47,6 +49,10 @@ def read_root(request: Request):
 @app.get("/index.html")
 def read_root(request: Request):
 	return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return FileResponse('./glider_compass.ico')
 
 @app.get("/static/{filename}")
 async def get_resource(filename):
@@ -116,9 +122,41 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 			print(e)
 			print("file upload failed")
 
-@app.get('/filter/{datetime}/{duration}/{startlong}/{startlat}')
-async def filtering(datetime, duration, startlong, startlat):
-	particlesJSON = run_filter(datetime, duration, startlong, startlat, 0, 0)
+@app.get('/filter/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')
+async def filtering(dateTime, duration, dataID, desLong, desLat):
+	dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(dataID))
+	timedata = list(dataset['s']['time'].data)
+	latdata = list(dataset['s']['m_gps_lat'].data)
+	longdata = list(dataset['s']['m_gps_lon'].data)
+	timedata, latdata, longdata = zip(*sorted(zip(timedata, latdata, longdata)))
+	newtime = []
+	newlat = []
+	newlong = []
+	print(latdata[0:5])
+	for j in range(len(timedata)):
+		if (-5400 <= latdata[j] <= 5400):
+			newtime.append(timedata[j])
+			newlat.append(latdata[j])
+			newlong.append(longdata[j])
+	newnewtime = [newtime[0]]
+	newnewlat = [newlat[0]]
+	newnewlong = [newlong[0]]
+	dtime = 0
+	for k in range(1, len(newtime)):
+		dtime = newtime[k] - newtime[k - 1]
+		if (6600 <= dtime <= 7800):
+			newnewtime.append(newtime[k])
+			newnewlat.append(newlat[k])
+			newnewlong.append(newlong[k])
+	""" print(newnewtime)
+	print(newnewlat)
+	print(newnewlong)
+	print(len(newnewtime))
+	print(len(newnewlat))
+	print(len(newnewlong)) """
+	#print(list(dataset[('s')]['longitude'].data))
+	return Response(status_code=200)
+	particlesJSON = run_filter(datetime, duration, dataID, desLong, desLat)
 	return Response(content=particlesJSON, status_code=200)
 
 @app.get('/newfile/{url}')
@@ -169,9 +207,10 @@ async def get_data(datetime, duration):
 		times = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()
 		longs = dataset['lon_rho'][:][:].data.tolist()
 		lats = dataset['lat_rho'][:][:].data.tolist()
-		ubarEast = dataset['ubar_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
-		vbarNorth = dataset['vbar_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
-		pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": ubarEast, "northward": vbarNorth})
+		uEast = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][0][:][:].data.tolist()
+		vNorth = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][0][:][:].data.tolist()
+		print(np.shape(np.array(uEast)))
+		pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": uEast, "northward": vNorth})
 		return Response(content=pointsJSON, status_code=200)
 	else:
 		return Response(status_code=200)

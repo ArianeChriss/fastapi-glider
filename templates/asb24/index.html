@@ -51,24 +51,32 @@
             </h2>
             <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                Add previous data files or enter a starting location here
+                To fetch data from the server, go to the data access form for the 
+                mission, copy the Dataset ID into the field below (Dataset ID is 
+                located at the top, next to the institution name).
                 <br>
-                Note: too many files may result in the program responding slowly
                 <br>
+                <div>
+                  <label for="dataURL">Dataset ID:</label>
+                  <input type="text" id="dataURL" name="dataURL">
+                </div>
                 <br>
                 <div class="dropdown d-grid gap-2">
-                  <button class="btn teal-btn dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <button id="runGeneratedDirections" type="button" class="btn teal-btn">Run Automated Directions Filter</button>
+                </div>
+                <!--div class="dropdown d-grid gap-2">
+                  <!--button class="btn teal-btn dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     File Type
                   </button>
                   <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="dataType">
                     <!--a class="dropdown-item" href="#">.nc v3</a>
-                    <a class="dropdown-item" href="#">.nc v4</a-->
+                    <a class="dropdown-item" href="#">.nc v4</a>
                     <a class="dropdown-item" href="#">.kml</a>
                     <a class="dropdown-item" href="#">.csv</a>
-                  </div>
-                  <button id="addData" type="button" class="btn teal-btn">Upload</button>
-                </div>
-                <br>
+                  </div->
+                  <button id="addData" type="button" class="btn teal-btn">Fetch Data</button>
+                </div-->
+                <!--br>
                 <div class="form-check form-switch">
                   <label for="useLast">Use final latitude and longitude from top layer file</label>
                   <input class="form-check-input" type="checkbox" role="switch" id="useLast" name="useLast" unchecked value=true>
@@ -89,53 +97,35 @@
                     <input type="text" id="firstLong" name="firstLong">
                   </div>
                   <br>
-                </div>
+                </div-->
               </div>
             </div>
           </div>
-          <div class="accordion-item">
+          <!--div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                Models
+                Generated Directions
               </button>
             </h2>
             <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
               <div class="accordion-body">
                 <div class="dropdown d-grid gap-2">
-                <button class="btn teal-btn dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Existing Model
-                </button>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="dataType"></div>
-              </div>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="modelList">
-                  Choose Existing Model
+                  <button id="runGeneratedDirections" type="button" class="btn teal-btn">Run Generated Directions Filter</button>
                 </div>
-                <br>
-                <div class="d-grid gap-2">
-                  <button id="addModelData" type="button" class="btn teal-btn">
-                    Upload New Model Generation File (.csv)
-                  </button>
-                  <button id="runNewModelFile" type="button" class="btn teal-btn">
-                    Generate Model Parameters
-                  </button>
-                </div>
-                <div>
-                </div>
-                <br>
               </div>
             </div>
-          </div>
+          </div-->
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                Paths
+                User Directions
               </button>
             </h2>
             <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
               <div class="accordion-body">
-                <div class="compass center">
+                <!--div class="compass center">
                   <img id="needle" class="needle" src="./static/needle.png">
-                </div>
+                </div-->
                 <br>
                 <div class="form-check form-switch">
                   <label for="UTC">UTC</label>
@@ -161,15 +151,18 @@
                   <label for="color" class="form-label">Particle Color:</label>
                   <input type="color" class="form-control form-control-color" id="color" value="#563d7c">
                 </div>
+                <br>
+                <div class="dropdown d-grid gap-2">
+                  <button class="btn teal-btn" type="button" id="chooseWpt">Choose Waypoint</button>
+                  <button class="btn teal-btn" type="button" id="run">Run Filter</button>
+                </div>
               </div>
-              <div class="d-grid gap-2 px-3">
-                <button class="btn teal-btn" type="button" id="run">Run Filter</button>
             </div>
           </div>
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                Currents
+                Current Time Iterations
               </button>
             </h2>
             <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
@@ -201,8 +194,6 @@
           </div>
         </div>
         <!--button type="button" id="line">Add Coordinates</button-->
-      </div>
-      <div class="footer">
       </div>
     </div>
     <!--h1>Autonomous Systems Bootcamp 2024</h1>

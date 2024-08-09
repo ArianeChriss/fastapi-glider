@@ -67,7 +67,7 @@ input[type=checkbox] {
   grid-template-columns: repeat(9, 1fr);
   grid-auto-rows: 100vh;
   grid-template-areas:
-    "main main main main main sd sd sd sd"
+    "main main main main main sd sd sd sd";
 }
 
 .header {
@@ -88,6 +88,8 @@ input[type=checkbox] {
 
 .content {
   grid-area: main;
+  /*position: fixed;*/
+  overflow: auto;
 }
 
 .sidebar {
@@ -192,4 +194,5 @@ input[type=checkbox] {
 .teal-btn {
   background-color: #19606E !important;
   color: #FFF !important;
+  display: block;
 }

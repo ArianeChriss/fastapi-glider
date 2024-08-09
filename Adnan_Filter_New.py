@@ -62,7 +62,7 @@ def convert_to_meters(initial_position, commanded_position, after_2Hour, avg_spe
     pointJSON = json.dumps({"time": times, "longs": pointLongs.tolist(), "lats": pointLats.tolist()})
     return pointJSON'''
 
-def run_filter(datetime, duration, startLong, startLat, desLong, desLat):
+def run_filter(datetime, duration, dataID, desLong, desLat):
     initial_position = [-73.5007, 38.42143]
     commanded_position = [-74.00, 39.1669]
     after_2Hour = [-73.5086, 38.43054]
@@ -72,15 +72,15 @@ def run_filter(datetime, duration, startLong, startLat, desLong, desLat):
     times = [0, 1]
     longs = []
     lats = []
-    longs.append([startLong])
-    lats.append([startLat])
+    longs.append([initial_position[0]])
+    lats.append([initial_position[1]])
     resampled_positions = convert_to_meters(initial_position, commanded_position, after_2Hour, avg_speed, travel_time, number_of_samples)
     longs = [[initial_position[0]], resampled_positions[:,0].tolist()]
     lats = [[initial_position[1]], resampled_positions[:,1].tolist()]
     pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats})
     return pointsJSON
 
-def plot_positions(initial_position, commanded_position):
+'''def plot_positions(initial_position, commanded_position):
     resampled_positions = convert_to_meters(initial_position, commanded_position, after_2Hour, avg_speed, travel_time, number_of_samples)
 
     # Extract longitudes and latitudes from resampled positions
@@ -102,4 +102,4 @@ def plot_positions(initial_position, commanded_position):
     plt.show()
     return(run_filter(None, None, initial_position[0], initial_position[1], commanded_position[0], commanded_position[1]))
 
-plot_positions(initial_position, commanded_position)
+plot_positions(initial_position, commanded_position)'''
