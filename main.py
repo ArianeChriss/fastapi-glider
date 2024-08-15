@@ -143,16 +143,19 @@ async def filtering_one(dateTime, duration, dataID, desLong, desLat):
 	newnewlat = [newlat[0]]
 	newnewlong = [newlong[0]]
 	dtime = 0
+	filterdata = {"dataID": dataID, "wptLong": desLong, "wptLat": desLat, "points": {}}
 	for k in range(1, len(newtime)):
 		dtime = newtime[k] - newtime[k - 1]
 		if (6600 <= dtime <= 7800):
+			filterdata["points"][k] = {"time": newtime[k], "long": newlong[k], "lat": newlat[k]}
 			newnewtime.append(newtime[k])
 			newnewlat.append(newlat[k])
 			newnewlong.append(newlong[k])
+	print(filterdata)
 	'''
 	send previous glider mission data to the run_filter function
 	'''
-	particlesJSON = run_filter_one(duration, float(desLong), float(desLat), newnewtime, [newnewlong, newnewlat])#(datetime, duration, dataID, desLong, desLat)
+	particlesJSON = run_filter_one(duration, float(desLong), float(desLat), newnewtime[-5:], [newnewlong[-5:], newnewlat[-5:]])#(datetime, duration, dataID, desLong, desLat)
 	return Response(content=particlesJSON, status_code=200)
 
 @app.get('/filter/eightdir/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')
@@ -232,11 +235,10 @@ async def get_data(datetime, duration):
 		times = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()
 		longs = dataset['lon_rho'][:][:].data.tolist()
 		lats = dataset['lat_rho'][:][:].data.tolist()
-		uEast = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][0][:][:].data.tolist()
-		vNorth = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][0][:][:].data.tolist()
-		uEast = np.array(uEast)[0].tolist()
-		vNorth = np.array(vNorth)[0].tolist()
-		#print(np.shape(np.array(uEast[0])))
+		uEast = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
+		vNorth = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
+		uEast = np.array(uEast[:][0][:][:]).tolist()
+		vNorth = np.array(vNorth[:][0][:][:]).tolist()
 		pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": uEast, "northward": vNorth})
 		return Response(content=pointsJSON, status_code=200)
 	else:

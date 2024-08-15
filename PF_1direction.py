@@ -109,12 +109,12 @@ def estimate_positions(glider_times, initial_positions, heading_angle, t=1, v_ki
 		current_times = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()
 		longs = dataset['lon_rho'][:][:].data#.tolist()
 		lats = dataset['lat_rho'][:][:].data#.tolist()
-		uEast = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data[0]#.tolist()
-		vNorth = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data[0]#.tolist()
+		uEast = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
+		vNorth = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
 		#uEast = np.array(uEast)[0]
 		#vNorth = np.array(vNorth)[0]
 	# Calculate current's velocity components
-	v_c_east, v_c_north = get_closest_current(initial_positions[:,0],initial_positions[:,1], longs, lats, glider_times, uEast, vNorth, current_times) #0,0
+	v_c_east, v_c_north = get_closest_current(initial_positions[:,0],initial_positions[:,1], longs, lats, glider_times, np.array(uEast[:][0][:][:]), np.array(vNorth[:][0][:][:]), current_times) #0,0
 	#v_c_east, v_c_north = v_c_east*0.51, v_c_north*0.51
 	# print("current:", v_c_east, v_c_north)
 	n_g_mean, n_c_mean = 0, 0
@@ -182,7 +182,7 @@ def initialize_particles(initial_position, n_samples=200):
 
 def run_filter_one(duration, desLong, desLat, glider_times, measured_position, v_kinematic=0.29, n_samples=200, n_g_std=0.005, n_c_std=0.005):
 	measured_position = dmm_to_dd(measured_position)
-	print('meas pos:', measured_position)
+	#print('meas pos:', measured_position)
 	initial_position = [measured_position[0][0], measured_position[0][1]]
 	estimated_positions = np.zeros((1,200,2))
 	#commanded_position = [-73.19134, 38.414]
@@ -195,10 +195,10 @@ def run_filter_one(duration, desLong, desLat, glider_times, measured_position, v
 			
 
 	plt.figure()
-	print(glider_times)
+	#print(glider_times)
 	for t in range(len(glider_times)):
 		if t == 0:
-			print('init pose:',initial_position)
+			#print('init pose:',initial_position)
 			initial_positions = initialize_particles(initial_position, n_samples=n_samples)
 			flattened_initial_positions = initial_positions.reshape(np.shape(initial_positions)[0]*np.shape(initial_positions)[1], 2)
 			longs = [flattened_initial_positions[:,0].tolist()]
@@ -220,13 +220,13 @@ def run_filter_one(duration, desLong, desLat, glider_times, measured_position, v
 		# if measured_position:
 		resampled_positions[0,:,:] = resample(estimated_positions[0], measured_position[t//2])
 		print(t)
-		if t==3:
-			print(np.shape(np.array(longs)))
-			break
+		'''if t==4:
+			#print(np.shape(np.array(longs)))
+			break'''
 
 
 		# plot_positions(initial_positions, estimated_positions, commanded_position=commanded_position, measured_position=measured_position[t//2], resampled_positions=resampled_positions)
-	return json.dumps({"time": [0, 1, 2, 3], "longs": longs, "lats": lats}) # CHANGE TIMES BACK TO ACTUAL times.tolist() LATER
+	return json.dumps({"time": times.tolist(), "longs": longs, "lats": lats, "measured": measured_position}) # CHANGE TIMES BACK TO ACTUAL times.tolist() LATER
 
 	plt.xlabel('Longitude')
 	plt.ylabel('Latitude')

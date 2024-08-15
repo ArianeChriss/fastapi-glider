@@ -338,9 +338,9 @@ function render_particles(name, color) {
   var time = parseInt(timeslider.value);
   var data = JSON.parse(filterData.replace(/\bNaN\b/g, "null"));
   var filterSource = [];
-  console.log(data);
-  console.log(data.time.length);
-  console.log(data.longs);
+  //console.log(data);
+  //console.log(data.time.length);
+  //console.log(data.longs);
   for (var i = 0; i < data.time.length; i++) {
     for (var j = 0; j < data.longs[i].length; j++) {
       var tempLong = data.longs[i][j];
@@ -356,7 +356,18 @@ function render_particles(name, color) {
       filterSource.push(feature);
     }
   }
-  console.log("hello");
+  for (var i = 0; i < data.measured.length; i++) {
+    var tempLong = data.measured[i][0];
+    var tempLat = data.measured[i][1];
+    var feature = new Feature({
+      geometry: new Point([tempLong, tempLat]),
+      red: 0,
+      green: 0,
+      blue: 0
+    })
+    filterSource.push(feature);
+  }
+  //console.log("hello");
   var geoJsonFormat = new GeoJSON();
   var geoJsonObject = geoJsonFormat.writeFeaturesObject(filterSource);
   var features = geoJsonFormat.readFeatures(geoJsonObject);
@@ -410,7 +421,7 @@ function render_arrows() { // show retrieved current data as vector field
     }
   }
   var data = JSON.parse(currentData.replace(/\bNaN\b/g, "null"));
-  var currentSource = [];
+  var currentSource1 = [];     // if changing this to use the global variable doesn't work, change back to local currentsource
   for (var i = 0; i < data.longs.length; i++) {
     for (var j = 0; j < data.longs[i].length; j++) {
       var tempLong = parseFloat(data.longs[i][j]);
@@ -419,6 +430,10 @@ function render_arrows() { // show retrieved current data as vector field
       if ((!(Number.isNaN(tempLong))) && (!(Number.isNaN(tempLat)))) {
         var east = parseFloat(data.eastward[time][i][j]);                 // APPARENTLY THIS HAS A PROBLEM, ERROR THROWN WHEN 3O ENTERED AS DURATION
         var north = parseFloat(data.northward[time][i][j]);               // COULD BE BEYOND SCOPE OF SINGLE FILE TIME RANGE
+        //console.log("east: " + toString(east));
+        //console.log(east);
+        //console.log(Number.isNaN(east));
+        //console.log(!(Number.isNaN(east)) && !(Number.isNaN(north)));
         if ((!(Number.isNaN(east))) && (!(Number.isNaN(north)))) {
           var magnitude = Math.sqrt((east**2)+(north**2));
           if (magnitude != 0) {
@@ -458,7 +473,7 @@ function render_arrows() { // show retrieved current data as vector field
                 rotation: tempRotation,
                 strength: magnitude
               })
-              currentSource.push(feature);
+              currentSource1.push(feature);
             }
           }
         }
@@ -466,12 +481,12 @@ function render_arrows() { // show retrieved current data as vector field
     }
   }
   var geoJsonFormat = new GeoJSON();
-  var geoJsonObject = geoJsonFormat.writeFeaturesObject(currentSource);
+  var geoJsonObject = geoJsonFormat.writeFeaturesObject(currentSource1);
   var features = geoJsonFormat.readFeatures(geoJsonObject);
-  var source = new VectorSource();
-  source.addFeatures(features);
+  var source1 = new VectorSource();
+  source1.addFeatures(features);
   var pointsLayer = new WebGLPointsLayer({
-    source: source,
+    source: source1,
     style: iconStyle,
     title: "currents",
     timeData: time
@@ -596,6 +611,7 @@ $("#currents").on("click", function() {
   if (document.getElementById("currents").checked) {
     if (filterRun == true) {
       if (currentData != null) {}
+      console.log("current data exists");
       debounced_render_arrows();
       //view.on("change:resolution", debounced_render_arrows);
     }
@@ -613,8 +629,8 @@ $("#timeRange").on("change", function() {                         // figure out 
     const name = document.getElementById("runName").value;
     const color = document.getElementById("color").value;
     debounced_render_arrows();
-    //console.log("changing time slider");
-    //debounced_render_particles(name, color);
+    console.log("changing time slider");
+    debounced_render_particles(name, color);
   }
 })
 infoCloser.addEventListener("click", function() {
