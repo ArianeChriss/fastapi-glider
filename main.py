@@ -27,6 +27,15 @@ import numpy as np
 from PF_1direction import run_filter_one
 #from PF_8directions_backend import run_filter_eight
 
+def convert_dmm_to_dd(dmm_value):
+       if dmm_value < 0: 
+           degrees = -dmm_value // 100
+           minutes = -dmm_value % 100
+           return -(degrees + (minutes / 60))
+       else:
+           degrees = dmm_value // 100
+           minutes = dmm_value % 100
+           return degrees + (minutes / 60)
 
 app = FastAPI(title="main-app")
 templates = Jinja2Templates(directory="templates/asb24")
@@ -147,15 +156,15 @@ async def filtering_one(dateTime, duration, dataID, desLong, desLat):
 	for k in range(1, len(newtime)):
 		dtime = newtime[k] - newtime[k - 1]
 		if (6600 <= dtime <= 7800):
-			filterdata["points"][k] = {"time": newtime[k], "long": newlong[k], "lat": newlat[k]}
+			filterdata["points"][k] = {"time": newtime[k], "long": convert_dmm_to_dd(newlong[k]), "lat": convert_dmm_to_dd(newlat[k])}
 			newnewtime.append(newtime[k])
 			newnewlat.append(newlat[k])
 			newnewlong.append(newlong[k])
-	print(filterdata)
+	#print(filterdata)
 	'''
 	send previous glider mission data to the run_filter function
 	'''
-	particlesJSON = run_filter_one(duration, float(desLong), float(desLat), newnewtime[-5:], [newnewlong[-5:], newnewlat[-5:]])#(datetime, duration, dataID, desLong, desLat)
+	particlesJSON = run_filter_one(duration, filterdata, float(desLong), float(desLat), newnewtime[-5:], [newnewlong[-5:], newnewlat[-5:]])#(datetime, duration, dataID, desLong, desLat)
 	return Response(content=particlesJSON, status_code=200)
 
 @app.get('/filter/eightdir/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')

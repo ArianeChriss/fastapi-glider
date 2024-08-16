@@ -180,7 +180,8 @@ def initialize_particles(initial_position, n_samples=200):
 	return initial_positions
 
 
-def run_filter_one(duration, desLong, desLat, glider_times, measured_position, v_kinematic=0.29, n_samples=200, n_g_std=0.005, n_c_std=0.005):
+def run_filter_one(duration, filterdata, desLong, desLat, glider_times, measured_position, v_kinematic=0.29, n_samples=200, n_g_std=0.005, n_c_std=0.005):
+	returndata = {"actual": filterdata, "predictions": {}}
 	measured_position = dmm_to_dd(measured_position)
 	#print('meas pos:', measured_position)
 	initial_position = [measured_position[0][0], measured_position[0][1]]
@@ -208,7 +209,12 @@ def run_filter_one(duration, desLong, desLat, glider_times, measured_position, v
 			flattened_initial_positions = initial_positions.reshape(np.shape(initial_positions)[0]*np.shape(initial_positions)[1], 2)
 			longs.append(flattened_initial_positions[:,0].tolist())
 			lats.append(flattened_initial_positions[:,1].tolist())
-
+		
+		returndata["predictions"][str(glider_times[t])] = {}
+		for i in range(len(flattened_initial_positions)):
+			returndata["predictions"][str(glider_times[t])][i] = {}
+			returndata["predictions"][str(glider_times[t])][i]["long"] = flattened_initial_positions[i][0]
+			returndata["predictions"][str(glider_times[t])][i]["lat"] = flattened_initial_positions[i][1]
 		#print(initial_positions[0])
 		diff_in_lon = float(commanded_position[0])-initial_positions[0,:,0] #Difference in lattitude between commanded and inital points, in meters.
 		diff_in_lat = float(commanded_position[1])-initial_positions[0,:,1] #Difference in longitude between commanded and initial points, in meters.
@@ -226,7 +232,7 @@ def run_filter_one(duration, desLong, desLat, glider_times, measured_position, v
 
 
 		# plot_positions(initial_positions, estimated_positions, commanded_position=commanded_position, measured_position=measured_position[t//2], resampled_positions=resampled_positions)
-	return json.dumps({"time": times.tolist(), "longs": longs, "lats": lats, "measured": measured_position}) # CHANGE TIMES BACK TO ACTUAL times.tolist() LATER
+	return json.dumps({"time": times.tolist(), "longs": longs, "lats": lats, "measured": measured_position, "returndata": returndata})
 
 	plt.xlabel('Longitude')
 	plt.ylabel('Latitude')

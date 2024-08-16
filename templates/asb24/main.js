@@ -235,7 +235,7 @@ function run_filter(datetime, duration, dirNum, dataID, wptLong, wptLat, name, c
     }
   }
   if (dirNum == 1) {
-    xhttp.open("GET","/filter/onedir/"+datetime+"/"+duration+"/"+dataID+"/"+String(38)+"/"+String(-74), true);
+    xhttp.open("GET","/filter/onedir/"+datetime+"/"+duration+"/"+dataID+"/"+String(-74)+"/"+String(38), true);
   }
   else {
     xhttp.open("GET","/filter/eightdir/"+datetime+"/"+duration+"/"+dataID+"/"+wptLong+"/"+wptLat, true);
@@ -337,16 +337,43 @@ function render_particles(name, color) {
   }
   var time = parseInt(timeslider.value);
   var data = JSON.parse(filterData.replace(/\bNaN\b/g, "null"));
+  console.log(data.returndata);
   var filterSource = [];
-  //console.log(data);
-  //console.log(data.time.length);
-  //console.log(data.longs);
-  for (var i = 0; i < data.time.length; i++) {
+  for (var i = 0; i < Object.keys(data.returndata.predictions).length; i++) {
+    var firstkey = Object.keys(data.returndata.predictions)[i].toString();
+    for (var j = 0; j < Object.keys(data.returndata.predictions[firstkey]).length; j++) {
+      var secondkey = Object.keys(data.returndata.predictions[firstkey])[j];
+      var timestamp = new Date(firstkey*1000);
+      var feature = new Feature({
+        geometry: new Point([data.returndata.predictions[firstkey][secondkey].long, data.returndata.predictions[firstkey][secondkey].lat]),
+        red: parseInt(color.slice(1,3), 16),
+        green: parseInt(color.slice(3,5), 16),
+        blue: parseInt(color.slice(5,7), 16),
+        commanded_waypoint: data.returndata.actual.wptLong.toString() + ", " + data.returndata.actual.wptLat.toString(),
+        long_lat: data.returndata.predictions[firstkey][secondkey].long.toString() + ", " + data.returndata.predictions[firstkey][secondkey].lat.toString(),
+        time: timestamp.toUTCString()
+      })
+      filterSource.push(feature);
+    }
+  }
+  for (var i = 0; i < Object.keys(data.returndata.actual.points).length; i++) {
+    firstkey = Object.keys(data.returndata.actual.points)[i].toString();
+    timestamp = new Date(data.returndata.actual.points[firstkey].time * 1000);
+    var feature = new Feature({
+      geometry: new Point([data.returndata.actual.points[firstkey].long, data.returndata.actual.points[firstkey].lat]),
+      red: 0,
+      green: 0,
+      blue: 0,
+      commanded_waypoint: data.returndata.actual.wptLong.toString() + ", " + data.returndata.actual.wptLat.toString(),
+      long_lat: data.returndata.actual.points[firstkey].long.toString() + ", " + data.returndata.actual.points[firstkey].lat.toString(),
+      time: timestamp.toUTCString()
+    })
+    filterSource.push(feature);
+  }
+  /*for (var i = 0; i < data.time.length; i++) {
     for (var j = 0; j < data.longs[i].length; j++) {
       var tempLong = data.longs[i][j];
       var tempLat = data.lats[i][j];
-      //console.log(tempLong);
-      //console.log(tempLat);
       var feature = new Feature({
         geometry: new Point([tempLong, tempLat]),
         red: parseInt(color.slice(1,3), 16),
@@ -355,8 +382,8 @@ function render_particles(name, color) {
       })
       filterSource.push(feature);
     }
-  }
-  for (var i = 0; i < data.measured.length; i++) {
+  }*/
+  /*for (var i = 0; i < data.measured.length; i++) {
     var tempLong = data.measured[i][0];
     var tempLat = data.measured[i][1];
     var feature = new Feature({
@@ -366,7 +393,7 @@ function render_particles(name, color) {
       blue: 0
     })
     filterSource.push(feature);
-  }
+  }*/
   //console.log("hello");
   var geoJsonFormat = new GeoJSON();
   var geoJsonObject = geoJsonFormat.writeFeaturesObject(filterSource);
@@ -578,9 +605,11 @@ map.on("click", function(event) {
   }
   else {
     map.forEachFeatureAtPixel(event.pixel, function(feature) {
-      var data = feature.get("display_data");
-      if (data) {
-        infoContent.innerText = data;
+      var waypt = feature.get("commanded_waypoint");
+      var long_lat = feature.get("long_lat");
+      var time = feature.get("time");
+      if (time) {
+        infoContent.innerText = time + "\nLocation: " + long_lat + "\nCommanded Waypoint: " + waypt;
         overlay.setPosition(event.coordinate);
       }
     });
