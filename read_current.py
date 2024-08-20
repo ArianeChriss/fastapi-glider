@@ -4,7 +4,7 @@ from shapely.geometry import Point, MultiPoint
 from shapely.ops import nearest_points
 
 
-def get_closest_current(glider_long, glider_lat, longs, lats, glider_times, uEast, vNorth, current_times, t=1):
+def get_closest_current(glider_longs, glider_lats, longs, lats, glider_times, uEast, vNorth, current_times, t=1):
 
 	# directions, n_samples = np.shape(glider_long)[0], np.shape(glider_long)[1]
 
@@ -36,8 +36,8 @@ def get_closest_current(glider_long, glider_lat, longs, lats, glider_times, uEas
 
 	lats_all = lats.flatten()
 	longs_all = longs.flatten()
-	print(lats.shape)
-	print(lats_all.shape)
+	#print(lats.shape)
+	#print(lats_all.shape)
 
 	uEast_all = uEast.flatten()
 	vNorth_all = vNorth.flatten()
@@ -45,13 +45,13 @@ def get_closest_current(glider_long, glider_lat, longs, lats, glider_times, uEas
 	# glider_long = glider_long.flatten()
 	# glider_lat = glider_lat.flatten()
 
-	v_c_east, v_c_north = np.zeros(len(glider_long)), np.zeros(len(glider_lat))
+	v_c_east, v_c_north = np.zeros(len(glider_longs)), np.zeros(len(glider_lats))
 
 	points = [Point(lon, lat) for lon, lat in zip(longs_all, lats_all)]
 
 	grid_points = MultiPoint(points)
 
-	for i, orig in enumerate(zip(glider_long, glider_lat)):
+	for i, orig in enumerate(zip(glider_longs, glider_lats)):
 
 		nearest_geoms = nearest_points(Point(orig), grid_points)
 

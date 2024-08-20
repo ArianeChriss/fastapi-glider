@@ -206,24 +206,37 @@ function fetch_data(url) {
   xhttp.send();
 }
 
-function run_filter(datetime, duration, dirNum, dataID, wptLong, wptLat, name, color) {
+function run_filter(dirNum) {
   filterRun = true;
+  const name = document.getElementById("runName").value;
+  if ((name == undefined) || (name == "")) {
+    display_error("Please enter a valid run name")
+    console.log("Please enter a valid run name")
+  }
+  const dataID = document.getElementById("dataURL").value;
   if (dataID == undefined) {
     display_error("Please enter a dataset ID");
     console.log("Please enter a dataset ID");
   }
-  var datetime = document.getElementById("startDateTime").getAttribute("data-utcdatetime");
+  const calibration = parseInt(document.getElementById("calibration").value);
+  if (calibration == NaN) {
+    display_error("Please enter an integer point calibration number");
+    console.log("Please enter an integer point calibration number");
+    return;
+  }
+  const datetime = document.getElementById("startDateTime").getAttribute("data-utcdatetime");
   if (datetime == "") {
     display_error("Please select a start time");
     console.log("Please select a start time");
     return;
   }
-  var duration = parseInt(document.getElementById("duration").value);
+  const duration = parseInt(document.getElementById("duration").value);
   if (duration == NaN) {
     display_error("Please enter an integer duration");
     console.log("Please enter an integer duration");
     return;
   }
+  const color = document.getElementById("color").value;
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -235,10 +248,10 @@ function run_filter(datetime, duration, dirNum, dataID, wptLong, wptLat, name, c
     }
   }
   if (dirNum == 1) {
-    xhttp.open("GET","/filter/onedir/"+datetime+"/"+duration+"/"+dataID+"/"+String(38)+"/"+String(-74), true);
+    xhttp.open("GET","/filter/onedir/"+calibration+"/"+datetime+"/"+duration+"/"+dataID+"/"+String(-74)+"/"+String(40), true);
   }
   else {
-    xhttp.open("GET","/filter/eightdir/"+datetime+"/"+duration+"/"+dataID+"/"+wptLong+"/"+wptLat, true);
+    xhttp.open("GET","/filter/eightdir/"+calibration+"/"+datetime+"/"+duration+"/"+dataID, true);
   }
   xhttp.send();
   /*
@@ -337,16 +350,58 @@ function render_particles(name, color) {
   }
   var time = parseInt(timeslider.value);
   var data = JSON.parse(filterData.replace(/\bNaN\b/g, "null"));
+  console.log(data.returndata);
+  currentData = data.currentdata;
+  console.log(currentData);
   var filterSource = [];
-  console.log(data);
-  console.log(data.time.length);
-  console.log(data.longs);
-  for (var i = 0; i < data.time.length; i++) {
+  for (var i = 0; i < Object.keys(data.returndata.predictions).length; i++) {
+    var firstkey = Object.keys(data.returndata.predictions)[i].toString();
+    for (var j = 0; j < Object.keys(data.returndata.predictions[firstkey]).length; j++) {
+      var secondkey = Object.keys(data.returndata.predictions[firstkey])[j];
+      var timestamp = new Date(firstkey*1000);
+      var feature = new Feature({
+        geometry: new Point([data.returndata.predictions[firstkey][secondkey].long, data.returndata.predictions[firstkey][secondkey].lat]),
+        red: parseInt(color.slice(1,3), 16),
+        green: parseInt(color.slice(3,5), 16),
+        blue: parseInt(color.slice(5,7), 16),
+        long_lat: data.returndata.predictions[firstkey][secondkey].long.toString() + ", " + data.returndata.predictions[firstkey][secondkey].lat.toString(),
+        time: timestamp.toUTCString()
+      })
+      if (data.returndata.predictions[firstkey][secondkey].wptLong != undefined) {
+        if (data.returndata.predictions[firstkey][secondkey].wptLat != undefined) {
+          feature.set("commanded_waypoint", data.returndata.predictions[firstkey][secondkey].wptLong.toString() + ", " + data.returndata.predictions[firstkey][secondkey].wptLat.toString());
+        }
+      }
+      filterSource.push(feature);
+    }
+  }
+  var linePoints = []
+  for (var i = 0; i < Object.keys(data.returndata.actual.points).length; i++) {
+    firstkey = Object.keys(data.returndata.actual.points)[i].toString();
+    timestamp = new Date(data.returndata.actual.points[firstkey].time * 1000);
+    linePoints.push([data.returndata.actual.points[firstkey].long, data.returndata.actual.points[firstkey].lat])
+    var feature = new Feature({
+      geometry: new Point([data.returndata.actual.points[firstkey].long, data.returndata.actual.points[firstkey].lat]),
+      red: 0,
+      green: 0,
+      blue: 0,
+      long_lat: data.returndata.actual.points[firstkey].long.toString() + ", " + data.returndata.actual.points[firstkey].lat.toString(),
+      time: timestamp.toUTCString()
+    })
+    if (data.returndata.actual.points[firstkey].wptLong != undefined) {
+      if (data.returndata.actual.points[firstkey].wptLat != undefined) {
+        feature.set("commanded_waypoint", data.returndata.actual.points[firstkey].wptLong.toString() + ", " + data.returndata.actual.points[firstkey].wptLat.toString());
+      }
+    }
+    filterSource.push(feature);
+  }
+  feature = new Feature({
+    geometry: new LineString(linePoints)
+  })
+  /*for (var i = 0; i < data.time.length; i++) {
     for (var j = 0; j < data.longs[i].length; j++) {
       var tempLong = data.longs[i][j];
       var tempLat = data.lats[i][j];
-      //console.log(tempLong);
-      //console.log(tempLat);
       var feature = new Feature({
         geometry: new Point([tempLong, tempLat]),
         red: parseInt(color.slice(1,3), 16),
@@ -355,8 +410,19 @@ function render_particles(name, color) {
       })
       filterSource.push(feature);
     }
-  }
-  console.log("hello");
+  }*/
+  /*for (var i = 0; i < data.measured.length; i++) {
+    var tempLong = data.measured[i][0];
+    var tempLat = data.measured[i][1];
+    var feature = new Feature({
+      geometry: new Point([tempLong, tempLat]),
+      red: 0,
+      green: 0,
+      blue: 0
+    })
+    filterSource.push(feature);
+  }*/
+  //console.log("hello");
   var geoJsonFormat = new GeoJSON();
   var geoJsonObject = geoJsonFormat.writeFeaturesObject(filterSource);
   var features = geoJsonFormat.readFeatures(geoJsonObject);
@@ -368,6 +434,19 @@ function render_particles(name, color) {
     title: name,
     timeData: time
   })
+  var lineSource = new VectorSource({
+    features: [feature]
+  });
+  const vectorLayer = new VectorLayer({
+    source: lineSource,
+    style: new Style({
+      stroke: new Stroke({
+        color: '#636363',
+        width: 4
+      })
+    })
+  });
+  map.addLayer(vectorLayer);
   map.addLayer(pointsLayer);
   update_layers();
   return;
@@ -409,16 +488,24 @@ function render_arrows() { // show retrieved current data as vector field
       return;
     }
   }
-  var data = JSON.parse(currentData.replace(/\bNaN\b/g, "null"));
-  var currentSource = [];
+  var data = currentData; //JSON.parse(currentData.replace(/\bNaN\b/g, "null"));
+  var currentSource1 = [];     // if changing this to use the global variable doesn't work, change back to local currentsource
+  //console.log(data.uEast);
+  //console.log(data.uEast[0]);
+  //console.log(data.uEast[0][0]);
+  //console.log(data.uEast[0][0][0]);
   for (var i = 0; i < data.longs.length; i++) {
     for (var j = 0; j < data.longs[i].length; j++) {
       var tempLong = parseFloat(data.longs[i][j]);
       var tempLat = parseFloat(data.lats[i][j]);
       var tempRotation = 0;
       if ((!(Number.isNaN(tempLong))) && (!(Number.isNaN(tempLat)))) {
-        var east = parseFloat(data.eastward[time][i][j]);                 // APPARENTLY THIS HAS A PROBLEM, ERROR THROWN WHEN 3O ENTERED AS DURATION
-        var north = parseFloat(data.northward[time][i][j]);               // COULD BE BEYOND SCOPE OF SINGLE FILE TIME RANGE
+        var east = parseFloat(data.uEast[time][i][j]);                 // APPARENTLY THIS HAS A PROBLEM, ERROR THROWN WHEN 3O ENTERED AS DURATION
+        var north = parseFloat(data.vNorth[time][i][j]);               // COULD BE BEYOND SCOPE OF SINGLE FILE TIME RANGE
+        //console.log("east: " + toString(east));
+        //console.log(east);
+        //console.log(Number.isNaN(east));
+        //console.log(!(Number.isNaN(east)) && !(Number.isNaN(north)));
         if ((!(Number.isNaN(east))) && (!(Number.isNaN(north)))) {
           var magnitude = Math.sqrt((east**2)+(north**2));
           if (magnitude != 0) {
@@ -458,7 +545,7 @@ function render_arrows() { // show retrieved current data as vector field
                 rotation: tempRotation,
                 strength: magnitude
               })
-              currentSource.push(feature);
+              currentSource1.push(feature);
             }
           }
         }
@@ -466,12 +553,12 @@ function render_arrows() { // show retrieved current data as vector field
     }
   }
   var geoJsonFormat = new GeoJSON();
-  var geoJsonObject = geoJsonFormat.writeFeaturesObject(currentSource);
+  var geoJsonObject = geoJsonFormat.writeFeaturesObject(currentSource1);
   var features = geoJsonFormat.readFeatures(geoJsonObject);
-  var source = new VectorSource();
-  source.addFeatures(features);
+  var source1 = new VectorSource();
+  source1.addFeatures(features);
   var pointsLayer = new WebGLPointsLayer({
-    source: source,
+    source: source1,
     style: iconStyle,
     title: "currents",
     timeData: time
@@ -563,9 +650,16 @@ map.on("click", function(event) {
   }
   else {
     map.forEachFeatureAtPixel(event.pixel, function(feature) {
-      var data = feature.get("display_data");
-      if (data) {
-        infoContent.innerText = data;
+      var waypt = feature.get("commanded_waypoint");
+      var long_lat = feature.get("long_lat");
+      var time = feature.get("time");
+      if (time) {
+        if (waypt) {
+          infoContent.innerText = time + "\nLocation: " + long_lat + "\nCommanded Waypoint: " + waypt;
+        }
+        else {
+          infoContent.innerText = time + "\nLocation: " + long_lat;
+        }
         overlay.setPosition(event.coordinate);
       }
     });
@@ -580,14 +674,14 @@ $("#startDateTime").on("change", user_datechange);
 // return filter results to frontend
 // display filter results
 $("#runOne").on("click", function() {
-  var startElement = document.getElementById("startDateTime");
-  var startTime = startElement.getAttribute("data-utcdatetime");
-  var duration = parseInt(document.getElementById("duration").value);
-  const name = document.getElementById("runName").value;
-  const color = document.getElementById("color").value;
-  const dataID = document.getElementById("dataURL").value;
-  run_filter(startTime, duration, 1, dataID, wptLong, wptLat, name, color);
-  get_currents();
+  //var startElement = document.getElementById("startDateTime");
+  //var startTime = startElement.getAttribute("data-utcdatetime");
+  //var duration = parseInt(document.getElementById("duration").value);
+  //const name = document.getElementById("runName").value;
+  //const color = document.getElementById("color").value;
+  //const dataID = document.getElementById("dataURL").value;
+  run_filter(1);
+  //get_currents();
   return;
 })
 
@@ -596,6 +690,7 @@ $("#currents").on("click", function() {
   if (document.getElementById("currents").checked) {
     if (filterRun == true) {
       if (currentData != null) {}
+      console.log("current data exists");
       debounced_render_arrows();
       //view.on("change:resolution", debounced_render_arrows);
     }
@@ -613,8 +708,8 @@ $("#timeRange").on("change", function() {                         // figure out 
     const name = document.getElementById("runName").value;
     const color = document.getElementById("color").value;
     debounced_render_arrows();
-    //console.log("changing time slider");
-    //debounced_render_particles(name, color);
+    console.log("changing time slider");
+    debounced_render_particles(name, color);
   }
 })
 infoCloser.addEventListener("click", function() {

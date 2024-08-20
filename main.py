@@ -19,6 +19,9 @@ import csv
 #import pydap.client
 #from pydap.client import open_url
 from dapclient.client import open_url
+import aiohttp
+import asyncio
+from datetime import datetime, timedelta, timezone
 import dateutil
 import math
 import numpy as np
@@ -27,6 +30,20 @@ import numpy as np
 from PF_1direction import run_filter_one
 #from PF_8directions_backend import run_filter_eight
 
+def convert_dmm_to_dd(dmm_value):
+       if dmm_value < 0: 
+           degrees = -dmm_value // 100
+           minutes = -dmm_value % 100
+           return -(degrees + (minutes / 60))
+       else:
+           degrees = dmm_value // 100
+           minutes = dmm_value % 100
+           return degrees + (minutes / 60)
+
+async def process_data(dataset, variable_name):
+	variable = dataset["s"][variable_name].data
+	variableList = [item for item in variable]
+	return variableList
 
 app = FastAPI(title="main-app")
 templates = Jinja2Templates(directory="templates/asb24")
@@ -124,35 +141,120 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 			print(e)
 			print("file upload failed")
 
-@app.get('/filter/onedir/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')
-async def filtering_one(dateTime, duration, dataID, desLong, desLat):
+@app.get('/filter/onedir/{calibration}/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')			# okay yes there probably is a MUCH better way to do this but...
+async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat):					# I'm not doing it right now
 	dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(dataID))
-	timedata = list(dataset['s']['time'].data)
-	latdata = list(dataset['s']['m_gps_lat'].data)
-	longdata = list(dataset['s']['m_gps_lon'].data)
-	timedata, latdata, longdata = zip(*sorted(zip(timedata, latdata, longdata)))
+	print("opened url")
+	#variables = ['time', 'm_gps_lat', 'm_gps_lon', 'c_wpt_lon', 'c_wpt_lat']
+	#tasks = {variable: process_data(dataset, variable) for variable in variables}
+	#results = await asyncio.gather(*tasks.values())
+	#data = dict(zip(tasks.keys(), results))
+	timedata = np.array(dataset['s']['time'].data).tolist()
+	print("fetched time data")
+	latdata = np.array(dataset['s']['m_gps_lat'].data).tolist()
+	print("fetched lat data")
+	longdata = np.array(dataset['s']['m_gps_lon'].data).tolist()
+	print("fetched long data")
+	wptlongdata = np.array(dataset['s']['c_wpt_lon'].data).tolist()
+	print("fetched waypoint long data")
+	wptlatdata = np.array(dataset['s']['c_wpt_lat'].data).tolist()
+	print("fetched waypoint lat data")
+	print("glider data fetched")
+	timedata, latdata, longdata, wptlongdata, wptlatdata= zip(*sorted(zip(timedata, latdata, longdata, wptlongdata, wptlatdata)))
 	newtime = []
-	newlat = []
 	newlong = []
+	newlat = []
+	newwptlong = []
+	newwptlat = []
 	for j in range(len(timedata)):
 		if (-5400 <= latdata[j] <= 5400):
 			newtime.append(timedata[j])
-			newlat.append(latdata[j])
 			newlong.append(longdata[j])
+			newlat.append(latdata[j])
+			newwptlong.append(wptlongdata[j])
+			newwptlat.append(wptlatdata[j])
 	newnewtime = [newtime[0]]
-	newnewlat = [newlat[0]]
 	newnewlong = [newlong[0]]
+	newnewlat = [newlat[0]]
+	newnewwptlong = [newwptlong[0]]
+	newnewwptlat = [newwptlat[0]]
 	dtime = 0
+	lasttime = newtime[0]		# new
+	lastwptlong = None
+	lastwptlat = None
+	filterdata = {"dataID": dataID, "points": {}}
 	for k in range(1, len(newtime)):
-		dtime = newtime[k] - newtime[k - 1]
-		if (6600 <= dtime <= 7800):
+		#dtime = newtime[k] - newtime[k - 1]
+		dtime = newtime[k] - lasttime		# new
+		if (6600 <= dtime): #<= 7800):
+			filterdata["points"][k] = {"time": newtime[k], "long": convert_dmm_to_dd(newlong[k]), "lat": convert_dmm_to_dd(newlat[k])}
+			if (-5400 < newwptlat[k] < 5400):
+				lastwptlong = convert_dmm_to_dd(newwptlong[k])
+				lastwptlat = convert_dmm_to_dd(newwptlat[k])
+			filterdata["points"][k]["wptLong"] = lastwptlong
+			filterdata["points"][k]["wptLat"] = lastwptlat
 			newnewtime.append(newtime[k])
-			newnewlat.append(newlat[k])
 			newnewlong.append(newlong[k])
+			newnewlat.append(newlat[k])
+			newnewwptlong.append(lastwptlong)
+			newnewwptlat.append(lastwptlat)
+			lasttime = newtime[k]
+	try:
+		firsttimestamp = filterdata["points"][list(filterdata["points"])[-1 * int(calibration)]]["time"]
+	except Exception as e:
+		print(e)
+		return
+	print("done processing glider data")
+	preURL = 'https://tds.marine.rutgers.edu/thredds/dodsC/roms/doppio/2017_da/his/runs/History_RUN_'
+	#print(firsttimestamp)
+	datetimecheck = str(datetime.fromtimestamp(firsttimestamp, timezone.utc))
+	#print(datetimecheck)
+	fulldatetime = dateutil.parser.isoparse(datetimecheck)
+	hourOffset = int(datetimecheck[11:13])
+	minuteOffset = int(datetimecheck[14:16])
+	if (minuteOffset > 0):
+		#duration = int(duration) + 1
+		duration = int(duration) + 1
+	origdatetime = "2017-11-01T00:00:00Z"
+	fullorigdatetime = dateutil.parser.isoparse(origdatetime)
+	timeDiff = fulldatetime - fullorigdatetime
+	hourDiff = timeDiff.total_seconds() / 3600
+	trying = False
+	tryNum = 0
+	dataset = None
+	while ((not trying) and (tryNum < 5)):
+		try:
+			newURL = preURL + str(fulldatetime.date() - timedelta(days=tryNum)) + "T00:00:00Z"# + "?"
+			print(newURL)
+			dataset = open_url(newURL)
+		except Exception as e:
+			print(e)
+			print("data unavailable for selected date/time")
+			tryNum += 1
+		else:
+			trying = True
+	if (dataset):
+		filterdata["currents"] = {}
+		filterdata["currents"]["times"] = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()
+		filterdata["currents"]["longs"] = dataset['lon_rho'][:][:].data.tolist()
+		filterdata["currents"]["lats"] = dataset['lat_rho'][:][:].data.tolist()
+		filterdata["currents"]["uEast"] = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(calibration) + int(duration) \
+														  + (tryNum * 24)][:][:][:].data[0][:int(calibration)+int(duration)][:][:].tolist()	# for some reason, level index is first here.
+		filterdata["currents"]["vNorth"] = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(calibration) + int(duration) \
+															+ (tryNum * 24)][:][:][:].data[0][:int(calibration)+int(duration)][:][:].tolist() # don't know why.
+		#print(np.shape(np.array(filterdata["currents"]["uEast"])))
+		#print(np.shape(np.array(filterdata["currents"]["vNorth"])))
+		print("current data fetched")
+	else:
+		return
 	'''
 	send previous glider mission data to the run_filter function
 	'''
-	particlesJSON = run_filter_one(duration, float(desLong), float(desLat), newnewtime, [newnewlong, newnewlat])#(datetime, duration, dataID, desLong, desLat)
+	#print(len(newnewlong[-1 * int(calibration):]))
+	#print("^ length of longs that go into measured positions")
+	particlesJSON = run_filter_one(int(calibration), int(duration), filterdata, float(desLong), float(desLat), \
+								newnewtime[-1 * int(calibration):], newnewlong[-1 * int(calibration):], newnewlat[-1 * int(calibration):], \
+								newnewwptlong[-1 * int(calibration):], newnewwptlat[-1 * int(calibration):])#(datetime, duration, dataID, desLong, desLat)
 	return Response(content=particlesJSON, status_code=200)
 
 @app.get('/filter/eightdir/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')
@@ -232,11 +334,10 @@ async def get_data(datetime, duration):
 		times = dataset['time'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)].data.tolist()
 		longs = dataset['lon_rho'][:][:].data.tolist()
 		lats = dataset['lat_rho'][:][:].data.tolist()
-		uEast = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][0][:][:].data.tolist()
-		vNorth = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][0][:][:].data.tolist()
-		uEast = np.array(uEast)[0].tolist()
-		vNorth = np.array(vNorth)[0].tolist()
-		#print(np.shape(np.array(uEast[0])))
+		uEast = dataset['u_eastward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
+		vNorth = dataset['v_northward'][hourOffset + (tryNum * 24):hourOffset + int(duration) + (tryNum * 24)][:][:].data.tolist()
+		uEast = np.array(uEast[:][0][:][:]).tolist()
+		vNorth = np.array(vNorth[:][0][:][:]).tolist()
 		pointsJSON = json.dumps({"time": times, "longs": longs, "lats": lats, "eastward": uEast, "northward": vNorth})
 		return Response(content=pointsJSON, status_code=200)
 	else:

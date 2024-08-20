@@ -133,7 +133,12 @@
                 </div>
                 <br>
                 <div>
-                  <label for="startDateTime">Start time:</label>
+                  <label for="calibration">Number of Resampling Points:</label>
+                  <input type="number" id="calibration" name="calibration" value = "">
+                </div>
+                <br>
+                <div>
+                  <label for="startDateTime">Prediction Start time:</label>
                   <input type="datetime-local" id="startDateTime" name="startDateTime" data-utcdatetime="">
                 </div>
                 <br>
@@ -173,8 +178,7 @@
                 </div>
                 <div>
                   <label for="timeRange" class="form-label">Time</label>
-                  <input type="range" class="form-range" min="0" max="1" step="1" id="timeRange" name="timeRange" value=0 list="tickmarks">
-                  <datalist id="tickmarks"></datalist>
+                  <input type="range" class="form-range" min="0" max="1" step="1" id="timeRange" name="timeRange" value="0">
                 </div>
                 <br>
               </div>
