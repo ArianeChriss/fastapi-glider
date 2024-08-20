@@ -10,37 +10,36 @@ from dateutil.tz import gettz
 import json
 
 def convert_dmm_to_dd(dmm_value):
-       if dmm_value < 0: 
-           degrees = -dmm_value // 100
-           minutes = -dmm_value % 100
-           return -(degrees + (minutes / 60))
-       else:
-           degrees = dmm_value // 100
-           minutes = dmm_value % 100
-           return degrees + (minutes / 60)
+	if dmm_value < 0: 
+		degrees = -dmm_value // 100
+		minutes = -dmm_value % 100
+		return -(degrees + (minutes / 60))
+	else:
+		degrees = dmm_value // 100
+		minutes = dmm_value % 100
+		return degrees + (minutes / 60)
 
 def dmm_to_dd(coords_list):
-   dd_list = []
-   print(coords_list)
-   coords_list = np.array(coords_list).T
-   print(coords_list)
-   for coord in coords_list:
-       lon_dd = convert_dmm_to_dd(coord[0])
-       lat_dd = convert_dmm_to_dd(coord[1])
+	dd_list = []
+	#print(coords_list)
+	coords_list = np.array(coords_list).T
+	#print(coords_list)
+	for coord in coords_list:
+		lon_dd = convert_dmm_to_dd(coord[0])
+		lat_dd = convert_dmm_to_dd(coord[1])
 
-       dd_list.append([lon_dd, lat_dd]) 
+		dd_list.append([lon_dd, lat_dd]) 
 
-   return dd_list
+	return dd_list
 
 def dmm_to_dd_2(coords_list):
-   dd_list = []
-   for coord in coords_list:
-       lon_dd = convert_dmm_to_dd(coord[0])
-       lat_dd = convert_dmm_to_dd(coord[1])
+	dd_list = []
+	for coord in coords_list:
+		lon_dd = convert_dmm_to_dd(coord[0])
+		lat_dd = convert_dmm_to_dd(coord[1])
 
-       dd_list.append([lon_dd, lat_dd]) 
-
-   return dd_list
+		dd_list.append([lon_dd, lat_dd]) 
+	return dd_list
 
 
 def update_weights(particles, measurement, measurement_std=1):
@@ -145,8 +144,12 @@ def estimate_positions(glider_times, initial_positions, heading_angle, currentda
 	dive_duration = 2*3600 # in seconds
 
 	# Calculate traveled distance
-	d_east = v_east*dive_duration/111139			# where did this come from???
-	d_north = v_north*dive_duration/111139
+	# d_east = v_east*dive_duration/111139
+	# d_north = v_north*dive_duration/111139
+
+	r_earth = 6378137
+	d_north  =  (v_north * dive_duration / r_earth) * (180 / np.pi)
+	d_east =  (v_east * dive_duration / r_earth) * (180 / np.pi) / np.cos(initial_positions[:,1] * np.pi/180)
 
 	# Calculate estimated positions of the glider
 	estimated_long = initial_positions[:,0] + d_east #Finds new position, converts into lattitude and longitude again, than adds to new_position list. 

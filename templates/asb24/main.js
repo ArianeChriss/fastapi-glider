@@ -375,9 +375,11 @@ function render_particles(name, color) {
       filterSource.push(feature);
     }
   }
+  var linePoints = []
   for (var i = 0; i < Object.keys(data.returndata.actual.points).length; i++) {
     firstkey = Object.keys(data.returndata.actual.points)[i].toString();
     timestamp = new Date(data.returndata.actual.points[firstkey].time * 1000);
+    linePoints.push([data.returndata.actual.points[firstkey].long, data.returndata.actual.points[firstkey].lat])
     var feature = new Feature({
       geometry: new Point([data.returndata.actual.points[firstkey].long, data.returndata.actual.points[firstkey].lat]),
       red: 0,
@@ -393,6 +395,9 @@ function render_particles(name, color) {
     }
     filterSource.push(feature);
   }
+  feature = new Feature({
+    geometry: new LineString(linePoints)
+  })
   /*for (var i = 0; i < data.time.length; i++) {
     for (var j = 0; j < data.longs[i].length; j++) {
       var tempLong = data.longs[i][j];
@@ -429,6 +434,19 @@ function render_particles(name, color) {
     title: name,
     timeData: time
   })
+  var lineSource = new VectorSource({
+    features: [feature]
+  });
+  const vectorLayer = new VectorLayer({
+    source: lineSource,
+    style: new Style({
+      stroke: new Stroke({
+        color: '#636363',
+        width: 4
+      })
+    })
+  });
+  map.addLayer(vectorLayer);
   map.addLayer(pointsLayer);
   update_layers();
   return;

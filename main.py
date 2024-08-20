@@ -145,19 +145,19 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat):					# I'm not doing it right now
 	dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(dataID))
 	print("opened url")
-	variables = ['time', 'm_gps_lat', 'm_gps_lon', 'c_wpt_lon', 'c_wpt_lat']
-	tasks = {variable: process_data(dataset, variable) for variable in variables}
-	results = await asyncio.gather(*tasks.values())
-	data = dict(zip(tasks.keys(), results))
-	timedata = data["time"]#list(dataset['s']['time'].data)
+	#variables = ['time', 'm_gps_lat', 'm_gps_lon', 'c_wpt_lon', 'c_wpt_lat']
+	#tasks = {variable: process_data(dataset, variable) for variable in variables}
+	#results = await asyncio.gather(*tasks.values())
+	#data = dict(zip(tasks.keys(), results))
+	timedata = np.array(dataset['s']['time'].data).tolist()
 	print("fetched time data")
-	latdata = data["m_gps_lat"]#np.array(dataset['s']['m_gps_lat'].data).tolist()
+	latdata = np.array(dataset['s']['m_gps_lat'].data).tolist()
 	print("fetched lat data")
-	longdata = data["m_gps_lon"]#np.array(dataset['s']['m_gps_lon'].data).tolist()
+	longdata = np.array(dataset['s']['m_gps_lon'].data).tolist()
 	print("fetched long data")
-	wptlongdata = data["c_wpt_lon"]#np.array(dataset['s']['c_wpt_lon'].data).tolist()
+	wptlongdata = np.array(dataset['s']['c_wpt_lon'].data).tolist()
 	print("fetched waypoint long data")
-	wptlatdata = data["c_wpt_lat"]#np.array(dataset['s']['c_wpt_lat'].data).tolist()
+	wptlatdata = np.array(dataset['s']['c_wpt_lat'].data).tolist()
 	print("fetched waypoint lat data")
 	print("glider data fetched")
 	timedata, latdata, longdata, wptlongdata, wptlatdata= zip(*sorted(zip(timedata, latdata, longdata, wptlongdata, wptlatdata)))
