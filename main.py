@@ -18,7 +18,13 @@ from datetime import datetime, timedelta
 import csv
 #import pydap.client
 #from pydap.client import open_url
-from dapclient.client import open_url
+#from dapclient.client import open_url
+#from dapclient.model import iterdata
+#from dapclient
+from pydap.client import open_url
+from pydap.handlers.lib import IterData
+from pydap.model import BaseType, SequenceType
+import pprint
 import aiohttp
 import asyncio
 from datetime import datetime, timedelta, timezone
@@ -143,62 +149,76 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 
 @app.get('/filter/onedir/{calibration}/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')			# okay yes there probably is a MUCH better way to do this but...
 async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat):					# I'm not doing it right now
-	dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(dataID))
+	dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(dataID))['s']
 	print("opened url")
-	#variables = ['time', 'm_gps_lat', 'm_gps_lon', 'c_wpt_lon', 'c_wpt_lat']
-	#tasks = {variable: process_data(dataset, variable) for variable in variables}
-	#results = await asyncio.gather(*tasks.values())
-	#data = dict(zip(tasks.keys(), results))
-	timedata = np.array(dataset['s']['time'].data).tolist()
-	print("fetched time data")
-	latdata = np.array(dataset['s']['m_gps_lat'].data).tolist()
-	print("fetched lat data")
-	longdata = np.array(dataset['s']['m_gps_lon'].data).tolist()
-	print("fetched long data")
-	wptlongdata = np.array(dataset['s']['c_wpt_lon'].data).tolist()
-	print("fetched waypoint long data")
-	wptlatdata = np.array(dataset['s']['c_wpt_lat'].data).tolist()
-	print("fetched waypoint lat data")
-	print("glider data fetched")
-	timedata, latdata, longdata, wptlongdata, wptlatdata= zip(*sorted(zip(timedata, latdata, longdata, wptlongdata, wptlatdata)))
-	newtime = []
-	newlong = []
-	newlat = []
-	newwptlong = []
-	newwptlat = []
-	for j in range(len(timedata)):
-		if (-5400 <= latdata[j] <= 5400):
-			newtime.append(timedata[j])
-			newlong.append(longdata[j])
-			newlat.append(latdata[j])
-			newwptlong.append(wptlongdata[j])
-			newwptlat.append(wptlatdata[j])
-	newnewtime = [newtime[0]]
-	newnewlong = [newlong[0]]
-	newnewlat = [newlat[0]]
-	newnewwptlong = [newwptlong[0]]
-	newnewwptlat = [newwptlat[0]]
-	dtime = 0
-	lasttime = newtime[0]		# new
-	lastwptlong = None
-	lastwptlat = None
+	#thinned_dataset = dataset[('time', 'm_gps_lat', 'm_gps_lon','c_wpt_lat', 'c_wpt_lon')[:]]
+	seq = dataset[dataset['m_gps_lat'][:].data <= 9000]
+	newnewtime = []
+	newnewlong = []
+	newnewlat = []
+	newnewwptlong = []
+	newnewwptlat = []
+	i = 0
+	newtime = 0
+	lasttime = -6600
 	filterdata = {"dataID": dataID, "points": {}}
-	for k in range(1, len(newtime)):
-		#dtime = newtime[k] - newtime[k - 1]
-		dtime = newtime[k] - lasttime		# new
-		if (6600 <= dtime): #<= 7800):
-			filterdata["points"][k] = {"time": newtime[k], "long": convert_dmm_to_dd(newlong[k]), "lat": convert_dmm_to_dd(newlat[k])}
-			if (-5400 < newwptlat[k] < 5400):
-				lastwptlong = convert_dmm_to_dd(newwptlong[k])
-				lastwptlat = convert_dmm_to_dd(newwptlat[k])
-			filterdata["points"][k]["wptLong"] = lastwptlong
-			filterdata["points"][k]["wptLat"] = lastwptlat
-			newnewtime.append(newtime[k])
-			newnewlong.append(newlong[k])
-			newnewlat.append(newlat[k])
-			newnewwptlong.append(lastwptlong)
-			newnewwptlat.append(lastwptlat)
-			lasttime = newtime[k]
+	'''template = SequenceType("a")
+	template["b"] = BaseType("b")
+	template["c"] = BaseType("c")
+	template["d"] = BaseType("d")
+	data = IterData([(1, 2, 3), (4, 5, 6)], template)
+	for item in data:
+		print(item[0])
+	template = SequenceType("sequence")
+	template["time"] = BaseType("time")
+	template["m_gps_lon"] = BaseType("m_gps_lon")
+	template["m_gps_lat"] = BaseType("m_gps_lat")
+	template["c_wpt_lon"] = BaseType("c_wpt_lon")
+	template["c_wpt_lat"] = BaseType("c_wpt_lat")
+	iterator = IterData(thinned_dataset, template)
+	print(thinned_dataset.tree())
+	print(iterator)
+	#print(type(iterator))'''
+	count = 0
+	for i, key in enumerate(seq.keys()):
+		if (key == "time"):
+			timeindex = i
+		elif (key == "m_gps_lat"):
+			latindex = i
+		elif (key == "m_gps_lon"):
+			longindex = i
+		elif (key == "c_wpt_lat"):
+			wptlatindex = i
+		elif (key == "c_wpt_lon"):
+			wptlongindex = i
+	for i, timestamp in enumerate(seq.iterdata()):
+		newtime = timestamp[timeindex]
+		if (1723260043 <= newtime <= 1723260243):
+			print("IT'S HERE IT EXISTS WHY ARE YOU SKIPPING IT")
+		dtime = newtime - lasttime
+		if (6600 <= dtime):
+			lasttime = newtime
+			long = convert_dmm_to_dd(timestamp[longindex])
+			lat = convert_dmm_to_dd(timestamp[latindex])
+			filterdata["points"][i] = {"time": newtime, "long": long, "lat": lat}
+			newnewtime.append(newtime)
+			newnewlong.append(long)
+			newnewlat.append(lat)
+			count += 1
+			if (-9000 <= timestamp[wptlatindex] <= 9000):
+				wptlong = convert_dmm_to_dd(timestamp[wptlongindex])
+				wptlat = convert_dmm_to_dd(timestamp[wptlatindex])
+				filterdata["points"][i]["wptLong"] = wptlong
+				filterdata["points"][i]["wptLat"] = wptlat
+				newnewwptlong.append(wptlong)
+				newnewwptlat.append(wptlat)
+			elif (len(newnewwptlong) != 0):
+				filterdata["points"][i]["wptLong"] = newnewwptlong[-1]
+				filterdata["points"][i]["wptLat"] = newnewwptlat[-1]
+				newnewwptlong.append(newnewwptlong[-1])
+				newnewwptlat.append(newnewwptlat[-1])
+		if (i % 100 == 0):
+			print(i)
 	try:
 		firsttimestamp = filterdata["points"][list(filterdata["points"])[-1 * int(calibration)]]["time"]
 	except Exception as e:

@@ -3,7 +3,7 @@ import random
 import numpy as np
 import math
 from read_current import get_closest_current
-from dapclient.client import open_url
+#from dapclient.client import open_url
 import dateutil
 from datetime import datetime, timedelta, timezone
 from dateutil.tz import gettz
@@ -204,7 +204,7 @@ def run_filter_one(calibration, duration, filterdata, desLong, desLat, glider_ti
 	#print("^ lats")
 	measured_positions = np.column_stack((np.array(glider_longs), np.array(glider_lats)))		# if this doesn't work, check the format of the array(s)
 	#print(measured_positions)
-	measured_positions = dmm_to_dd_2(measured_positions)
+	measured_positions = measured_positions
 	#print('meas pos:', measured_positions)
 	initial_positions = [measured_positions[0][0], measured_positions[0][1]]
 	estimated_positions = np.zeros((1,200,2))
@@ -258,7 +258,7 @@ def run_filter_one(calibration, duration, filterdata, desLong, desLat, glider_ti
 
 
 		# plot_positions(initial_positions, estimated_positions, commanded_position=commanded_position, measured_position=measured_position[t//2], resampled_positions=resampled_positions)
-	return json.dumps({"time": times.tolist(), "longs": longs, "lats": lats, "measured": measured_positions, "returndata": returndata, "currentdata": filterdata["currents"]})
+	return json.dumps({"time": times.tolist(), "longs": longs, "lats": lats, "measured": measured_positions.tolist(), "returndata": returndata, "currentdata": filterdata["currents"]})
 
 	plt.xlabel('Longitude')
 	plt.ylabel('Latitude')
