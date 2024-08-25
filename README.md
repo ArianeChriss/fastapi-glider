@@ -8,7 +8,7 @@ kinematic model of a Teledyne Slocum glider to predict the likely location of th
 This project has been tested with Python version 3.12.3 and the following dependency versions:
 - [FastAPI](https://fastapi.tiangolo.com/) = 0.111.0
 - [pyKML](https://pythonhosted.org/pykml/) = 0.2.0
-- [pydap](https://github.com/pydap/pydap)) = 3.5
+- [pydap](https://github.com/pydap/pydap) = 3.5
 - [dateutil](https://dateutil.readthedocs.io/en/stable/) = 2.9.0.post0
 
 To set up the project, make a virtual environment with the above version of Python. To install the dependencies, activate your virtual environment, and run:
