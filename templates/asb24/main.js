@@ -444,7 +444,8 @@ function render_particles(name, color) {
         color: '#636363',
         width: 4
       })
-    })
+    }),
+    title: name + "-line"
   });
   map.addLayer(vectorLayer);
   map.addLayer(pointsLayer);

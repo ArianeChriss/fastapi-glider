@@ -37,14 +37,17 @@ from PF_1direction import run_filter_one
 #from PF_8directions_backend import run_filter_eight
 
 def convert_dmm_to_dd(dmm_value):
-       if dmm_value < 0: 
-           degrees = -dmm_value // 100
-           minutes = -dmm_value % 100
-           return -(degrees + (minutes / 60))
-       else:
-           degrees = dmm_value // 100
-           minutes = dmm_value % 100
-           return degrees + (minutes / 60)
+	if dmm_value < 0: 
+		degrees = -dmm_value // 100
+		minutes = -dmm_value % 100
+		return -(degrees + (minutes / 60))
+	else:
+		degrees = dmm_value // 100
+		minutes = dmm_value % 100
+		return degrees + (minutes / 60)
+
+def return_time(item):
+	return item[1]["time"]
 
 async def process_data(dataset, variable_name):
 	variable = dataset["s"][variable_name].data
@@ -151,8 +154,6 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat):					# I'm not doing it right now
 	dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(dataID))['s']
 	print("opened url")
-	#thinned_dataset = dataset[('time', 'm_gps_lat', 'm_gps_lon','c_wpt_lat', 'c_wpt_lon')[:]]
-	seq = dataset[dataset['m_gps_lat'][:].data <= 9000]
 	newnewtime = []
 	newnewlong = []
 	newnewlat = []
@@ -162,52 +163,40 @@ async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat
 	newtime = 0
 	lasttime = -6600
 	filterdata = {"dataID": dataID, "points": {}}
-	'''template = SequenceType("a")
-	template["b"] = BaseType("b")
-	template["c"] = BaseType("c")
-	template["d"] = BaseType("d")
-	data = IterData([(1, 2, 3), (4, 5, 6)], template)
-	for item in data:
-		print(item[0])
-	template = SequenceType("sequence")
-	template["time"] = BaseType("time")
-	template["m_gps_lon"] = BaseType("m_gps_lon")
-	template["m_gps_lat"] = BaseType("m_gps_lat")
-	template["c_wpt_lon"] = BaseType("c_wpt_lon")
-	template["c_wpt_lat"] = BaseType("c_wpt_lat")
-	iterator = IterData(thinned_dataset, template)
-	print(thinned_dataset.tree())
-	print(iterator)
-	#print(type(iterator))'''
-	count = 0
-	for i, key in enumerate(seq.keys()):
-		if (key == "time"):
-			timeindex = i
-		elif (key == "m_gps_lat"):
-			latindex = i
-		elif (key == "m_gps_lon"):
-			longindex = i
-		elif (key == "c_wpt_lat"):
-			wptlatindex = i
-		elif (key == "c_wpt_lon"):
-			wptlongindex = i
-	for i, timestamp in enumerate(seq.iterdata()):
-		newtime = timestamp[timeindex]
-		if (1723260043 <= newtime <= 1723260243):
-			print("IT'S HERE IT EXISTS WHY ARE YOU SKIPPING IT")
+	time = dataset['time']
+	m_gps_lat = dataset['m_gps_lat']
+	m_gps_lon = dataset['m_gps_lon']
+	c_wpt_lat = dataset['c_wpt_lat']
+	c_wpt_lon = dataset['c_wpt_lon']
+	mask = m_gps_lat[:] <= 9000
+	filtered_time = list(time[mask])
+	filtered_m_gps_lat = list(m_gps_lat[mask])
+	filtered_m_gps_lon = list(m_gps_lon[mask])
+	filtered_c_wpt_lat = list(c_wpt_lat[mask])
+	filtered_c_wpt_lon = list(c_wpt_lon[mask])
+	seq = {
+		'time': filtered_time,
+		'm_gps_lat': filtered_m_gps_lat,
+		'm_gps_lon': filtered_m_gps_lon,
+		'c_wpt_lat': filtered_c_wpt_lat,
+		'c_wpt_lon': filtered_c_wpt_lon
+	}
+	for i, timestamp in enumerate(seq['time']):
+		newtime = timestamp
+		#if (1723260043 <= newtime <= 1723260243):
+			#print("IT'S HERE IT EXISTS WHY ARE YOU SKIPPING IT")
 		dtime = newtime - lasttime
 		if (6600 <= dtime):
 			lasttime = newtime
-			long = convert_dmm_to_dd(timestamp[longindex])
-			lat = convert_dmm_to_dd(timestamp[latindex])
+			long = convert_dmm_to_dd(seq['m_gps_lon'][i])
+			lat = convert_dmm_to_dd(seq['m_gps_lat'][i])
 			filterdata["points"][i] = {"time": newtime, "long": long, "lat": lat}
 			newnewtime.append(newtime)
 			newnewlong.append(long)
 			newnewlat.append(lat)
-			count += 1
-			if (-9000 <= timestamp[wptlatindex] <= 9000):
-				wptlong = convert_dmm_to_dd(timestamp[wptlongindex])
-				wptlat = convert_dmm_to_dd(timestamp[wptlatindex])
+			if (-9000 <= seq['c_wpt_lat'][i] <= 9000):
+				wptlong = convert_dmm_to_dd(seq['c_wpt_lon'][i])
+				wptlat = convert_dmm_to_dd(seq['c_wpt_lat'][i])
 				filterdata["points"][i]["wptLong"] = wptlong
 				filterdata["points"][i]["wptLat"] = wptlat
 				newnewwptlong.append(wptlong)
@@ -217,8 +206,9 @@ async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat
 				filterdata["points"][i]["wptLat"] = newnewwptlat[-1]
 				newnewwptlong.append(newnewwptlong[-1])
 				newnewwptlat.append(newnewwptlat[-1])
-		if (i % 100 == 0):
+		if (i % 500 == 0):
 			print(i)
+	#filterdata["points"] = dict(sorted(filterdata["points"].items(), key=lambda item: item[1]["time"])) unnecessary, didn't seem to make a difference to order
 	try:
 		firsttimestamp = filterdata["points"][list(filterdata["points"])[-1 * int(calibration)]]["time"]
 	except Exception as e:
