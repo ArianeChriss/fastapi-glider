@@ -53,7 +53,7 @@ def get_closest_current(glider_longs, glider_lats, longs, lats, glider_times, uE
 
 	for i, orig in enumerate(zip(glider_longs, glider_lats)):
 
-		nearest_geoms = nearest_points(Point(orig), grid_points)
+		nearest_geoms = nearest_points(Point(orig[0], orig[1]), grid_points)
 
 		closest_point = np.array([nearest_geoms[1].x, nearest_geoms[1].y])
 
