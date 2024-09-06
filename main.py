@@ -46,13 +46,13 @@ def convert_dmm_to_dd(dmm_value):
 		minutes = dmm_value % 100
 		return degrees + (minutes / 60)
 
-def return_time(item):
+'''def return_time(item):
 	return item[1]["time"]
 
 async def process_data(dataset, variable_name):
 	variable = dataset["s"][variable_name].data
 	variableList = [item for item in variable]
-	return variableList
+	return variableList'''
 
 app = FastAPI(title="main-app")
 templates = Jinja2Templates(directory="templates/asb24")
@@ -153,6 +153,7 @@ async def parse_file(filetype, file: UploadFile = File(...)):
 @app.get('/filter/onedir/{calibration}/{dateTime}/{duration}/{dataID}/{desLong}/{desLat}')			# okay yes there probably is a MUCH better way to do this but...
 async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat):					# I'm not doing it right now
 	dataset = open_url("https://slocum-data.marine.rutgers.edu/erddap/tabledap/"+str(dataID))['s']
+	dataset = dataset[(dataset.m_gps_lat < 9001)]
 	print("opened url")
 	newnewtime = []
 	newnewlong = []
@@ -163,17 +164,11 @@ async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat
 	newtime = 0
 	lasttime = -6600
 	filterdata = {"dataID": dataID, "points": {}}
-	time = dataset['time']
-	m_gps_lat = dataset['m_gps_lat']
-	m_gps_lon = dataset['m_gps_lon']
-	c_wpt_lat = dataset['c_wpt_lat']
-	c_wpt_lon = dataset['c_wpt_lon']
-	mask = m_gps_lat[:] <= 9000
-	filtered_time = list(time[mask])
-	filtered_m_gps_lat = list(m_gps_lat[mask])
-	filtered_m_gps_lon = list(m_gps_lon[mask])
-	filtered_c_wpt_lat = list(c_wpt_lat[mask])
-	filtered_c_wpt_lon = list(c_wpt_lon[mask])
+	filtered_time = list(dataset['time'].data)#np.array(list(time[mask]))
+	filtered_m_gps_lat = list(dataset['m_gps_lat'].data)#np.array(list(m_gps_lat[mask]))
+	filtered_m_gps_lon = list(dataset['m_gps_lon'].data)#np.array(list(m_gps_lon[mask]))
+	filtered_c_wpt_lat = list(dataset['c_wpt_lat'].data)#np.array(list(c_wpt_lat[mask]))
+	filtered_c_wpt_lon = list(dataset['c_wpt_lon'].data)#np.array(list(c_wpt_lon[mask]))
 	seq = {
 		'time': filtered_time,
 		'm_gps_lat': filtered_m_gps_lat,
@@ -182,10 +177,11 @@ async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat
 		'c_wpt_lon': filtered_c_wpt_lon
 	}
 	for i, timestamp in enumerate(seq['time']):
-		newtime = timestamp
-		#if (1723260043 <= newtime <= 1723260243):
-			#print("IT'S HERE IT EXISTS WHY ARE YOU SKIPPING IT")
+		newtime = int(timestamp)
 		dtime = newtime - lasttime
+		if (1724753700 < timestamp < 1724753700 + 80):
+			print("lat " + str(seq['m_gps_lat'][i]))
+			print("long " + str(seq['m_gps_lon'][i]))
 		if (6600 <= dtime):
 			lasttime = newtime
 			long = convert_dmm_to_dd(seq['m_gps_lon'][i])
@@ -208,6 +204,13 @@ async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat
 				newnewwptlat.append(newnewwptlat[-1])
 		if (i % 500 == 0):
 			print(i)
+	print("length of time FIRST: " + str(np.shape(seq['time'])))
+	print("length of lats FIRST: " + str(np.shape(seq['m_gps_lat'])))
+	print("length of longs FIRST: " + str(np.shape(seq['m_gps_lon'])))
+	print("length of wpt lats FIRST: " + str(np.shape(seq['c_wpt_lat'])))
+	print("length of wpt longs FIRST: " + str(np.shape(seq['c_wpt_lon'])))
+	print("length of points AFTER: " + str(len(filterdata["points"])))
+	print("last point lat " + str(newnewlat[-1]))
 	#filterdata["points"] = dict(sorted(filterdata["points"].items(), key=lambda item: item[1]["time"])) unnecessary, didn't seem to make a difference to order
 	try:
 		firsttimestamp = filterdata["points"][list(filterdata["points"])[-1 * int(calibration)]]["time"]
@@ -262,8 +265,8 @@ async def filtering_one(calibration, dateTime, duration, dataID, desLong, desLat
 	'''
 	#print(len(newnewlong[-1 * int(calibration):]))
 	#print("^ length of longs that go into measured positions")
-	particlesJSON = run_filter_one(int(calibration), int(duration), filterdata, float(desLong), float(desLat), \
-								newnewtime[-1 * int(calibration):], newnewlong[-1 * int(calibration):], newnewlat[-1 * int(calibration):], \
+	particlesJSON = run_filter_one(int(calibration), int(duration), filterdata, newnewtime[-1 * int(calibration):], \
+								newnewlong[-1 * int(calibration):], newnewlat[-1 * int(calibration):], \
 								newnewwptlong[-1 * int(calibration):], newnewwptlat[-1 * int(calibration):])#(datetime, duration, dataID, desLong, desLat)
 	return Response(content=particlesJSON, status_code=200)
 
