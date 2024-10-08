@@ -47,7 +47,8 @@ def get_closest_current(glider_longs, glider_lats, longs, lats, glider_times, uE
 
 	v_c_east, v_c_north = np.zeros(len(glider_longs)), np.zeros(len(glider_lats))
 
-	points = [Point(lon, lat) for lon, lat in zip(longs_all, lats_all)]
+	points = [[float(lon), float(lat)] for lon, lat in zip(longs_all, lats_all)]
+	print(points[0])
 
 	grid_points = MultiPoint(points)
 
