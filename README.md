@@ -17,8 +17,10 @@ pip install fastapi==0.111.0
 pip install pykml==0.2.0
 pip install pydap==3.5
 pip install python-dateutil==2.9.0.post0
+pip install shapely==2.0.6
+pip install matplotlib==3.9.1.post1
 ```
-Clone or download this repository, navigate to the local repo directory. Until automatic folder generation is implemented, manually create a folder named "model_weights" inside the directory.
+Clone or download this repository, navigate to the local repo directory.
 
 Run the main.py file using:
 ```
@@ -33,7 +35,6 @@ When the server starts, open a browser and go to the listed IP address.
 >Your browser may default to trying to go to the IP address using https. If the server can't be found, click on the url again, and change the prefix to 'http'.
 
 
-### Running the model
 
 ### Editing the source code
 For contributing to this project, fork the repository and create a pull request with any changes.
@@ -41,35 +42,18 @@ For contributing to this project, fork the repository and create a pull request 
 ### TODOS:
 
 Python:
-- model and response function
-- function to check if model weight files folder exists, if not make it
-- filter and response function
-- adapt for all known .csv variable naming formats (Rutgers, University of Delaware, etc.)
-- save model weights to external file for future use
+- refine particle filter/current integration
 - add try/except blocks for error checking for bad time range in case of different time coverage files, possibly try going back another day
-- separate out csv reader (to be replaced with pandas) and current checking into external functions
 - add comments/documentation
 - separate out any parts that could require future modification
+- save out layer to .kml file backend
 
 Javascript:
-- allow selection of any model weight file before filter run
 - save out layer to .kml file
 - fix current display switch not working beyond first trigger
 - add loading cursor/grey out clickable components while waiting for response
 - change datalist element to be just a timerange element selection readout
-- add success/failure messages
-- add map legends for path colors and possibly current strengths
-- allow reordering layers
+- add success/failure messages (optional if users are patient, low priority)
+- add map legends for current strengths
 - add comments/documentation
-- add favicon (optional, but cooler)
-
-Other:
-- make dataflow diagram
-- figure out filter running GUI structure
-  - fetch model weight file list (maybe preload into interface, refreshing when new file is saved?)
-  - allow selection of any model weight file before filter run
-  - add model weight files folder to .gitignore so users don't automatically download others' models
-- look into remote hosting or deploying to single script activation
-  - activate python environment
-  - run main.py
-  - open browser to IP address
+- add import .kml file back in
